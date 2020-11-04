@@ -1,0 +1,40 @@
+extends layout
+
+block content
+    .container
+        #error
+            if error
+                p.text-danger #{msm}
+        if usuario != undefined
+            table(class="table table-hover")
+                    thead
+                        tr
+                            th ID partida
+                            th ID Jugador 1 
+                            th ID Jugador 2
+                            th Gandor Partida
+                            th Resultado
+                            th Estado
+                            th Accion
+                    tbody
+                        for x in json2
+                            tr(class="table-success")
+                                th(scope="row")=x.id
+                                td=x.idJugador1
+                                td=x.idJugador2
+                                td='Jugador:'+x.marcador
+                                td
+                                    if x.marcador==1
+                                        if x.idJugador1 == usuario.id
+                                            button(type="button" class="btn btn-success") Gane :)
+                                        else    
+                                            button(type="button" class="btn btn-danger") Perdi :(
+                                    else if x.marcador==0
+                                        button(type="button" class="btn btn-warning") Click ->
+                                td=x.estado    
+                                td
+                                    if x.estado=='proceso'
+                                        a(class="btn btn-primary" role="button" href="/j?partida=#{x.id}&jugador=#{usuario.id}") JUGAR
+        else
+            h1 No se Cargo informacion del usuario
+    

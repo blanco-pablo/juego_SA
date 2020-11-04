@@ -1,0 +1,13 @@
+version: "3.8"
+   
+services:
+  juego_nodejs:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    expose:
+      - "3000"
+    environment: 
+      - PUBLIC_JWT=AQUIDEBEIRLALLAVEPUBLICA
+    command: npm start
+

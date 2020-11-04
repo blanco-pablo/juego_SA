@@ -1,0 +1,122 @@
+doctype html
+html
+	head
+		title Usuarios
+		meta( name='viewport', content='width=device-width, initial-scale=1.0' )
+		meta( charset='utf-8' )
+		meta( http-equiv='X-UA-Compatible', content='IE=edge' )
+		link(href="//maxcdn.bootstrapcdn.com/bootswatch/3.3.0/flatly/bootstrap.min.css", rel="stylesheet")
+		link(href="https://fonts.googleapis.com/css?family=Lato:100,300,600" rel="stylesheet" type="text/css")
+		//link(rel='stylesheet', href='/css/style.css')
+		link(rel='stylesheet', href='css/juego.css')
+	body
+		if jugador != undefined & partida != undefined
+			//main del juego
+			main(class="container clearfix")
+				section(class="main-content clearfix")
+					div(class="main-stage")
+						div(class="stage-play-area")
+							// AREA DE DATOS
+							div(class="scene")
+								div(class="cube_1" id="dice-1")
+									img(src="../img/1.png", alt="Dice", class="cube_face cube_face--1")
+									img(src="../img/2.png", alt="Dice", class="cube_face cube_face--2")
+									img(src="../img/3.png", alt="Dice", class="cube_face cube_face--3")
+									img(src="../img/4.png", alt="Dice", class="cube_face cube_face--4")
+									img(src="../img/5.png", alt="Dice", class="cube_face cube_face--5")
+									img(src="../img/6.png", alt="Dice", class="cube_face cube_face--6")
+							div(class="scene2")
+								div(class="cube" id="dice-2")
+									img(src="../img/p1.png", class="poke")
+									img(src="../img/p2.png", class="poke")
+									img(src="../img/p3.png", class="poke")
+									img(src="../img/p4.png", class="poke")
+									img(src="../img/p5.png", class="poke")
+									img(src="../img/p6.png", class="poke")
+							div(class="scene3")
+								div(class="cube_" id="dice-3")
+									img(src="../img/p1.png", class="poke")
+									img(src="../img/p2.png", class="poke")
+									img(src="../img/p3.png", class="poke")
+									img(src="../img/p4.png", class="poke")
+									img(src="../img/p5.png", class="poke")
+									img(src="../img/p6.png", class="poke")
+							
+							// AREA DE JUGADORES
+						div(class="players")
+							div(div class="player-0-panel")
+								div(class="player-name" id="name-0") -
+								div(class="player-score" id="score-0") 100
+								div(class="player-current-box")
+									div(class="player-current-label") Ataque
+									div(class="player-current-score" id="current-at1") 0
+									div(class="player-current-score" id="current-es1") -
+							div(div class="player-1-panel")
+								div(class="player-name" id="name-1") -
+								div(class="player-score" id="score-1") 100
+								div(class="player-current-box")
+									div(class="player-current-label") ataque
+									div(class="player-current-score" id="current-at2") 0
+									div(class="player-current-score" id="current-es2") -
+					div(class="control-panel")
+						div(class="win-score-pane")
+							img(src="../img/logo.png", alt="Dice", class="logo")
+							span(class="current-win-score")
+						div(class="control-buttons")
+							button(class="btn-new")
+								span .
+							button(class="btn-roll")
+								span TIRAR
+							button(class="btn-save")
+								span .
+							button(class="btn-exit")
+								span SALIR
+							button(class="")
+								span .
+							a(href="#gameRules" class="btn-help")
+								span REGLAS
+			section(id="gameRules" class="game-rules")
+				h1 Reglas del Juego
+				ul
+					li
+						h3 Reglas
+							ol
+								li
+									span Los turno se toman uno por uno.
+								li
+									span Se PIERDE si la vida es menor a 0.
+								li
+									span Se baja la vida dependiendo de: 
+										b DADO * ATAQUE
+					li
+						h3 Como Jugar
+							ul
+								li
+									p Cuando se carga la pagina aparecera un icono verde sobre el panel del jugador que le toque lanzar el dado.
+								li 
+									p El jugador que sea su turno hara click en "Lanzar" para atacar. La cantidad del dado se multiplicara por su ataque y se bajara la vida del contricante
+								li
+									p El boton de "SALIR" te sacara del juego sin guardar ningun avance.
+				a(href="#" class="btn-close") [x] Close
+								
+			// Modal
+			div(class="modal-container")
+				div(class="modal-content")
+					form(action="" id="userForm")
+						div(class="form-group")
+							label ID Jugador
+							input(type="text" id="playername" name="" value="#{jugador}" disabled="" autofocus required aria-required)
+							label ID Partida
+							input(type="text" id="partida" name="" value="#{partida}" disabled="" autofocus required aria-required)
+							button(type="submit") play 
+			
+			// Modal Overlay
+			div(class="modal-overlay")
+			// Notification Pane
+			div(class="notification")
+		else
+			h1 No se Cargo informacion del usuario
+	
+	script(src="/socket.io/socket.io.js")
+	script(type="text/javascript" src="/js/script.js" )
+	script(type="text/javascript" src="/js/audio.js")
