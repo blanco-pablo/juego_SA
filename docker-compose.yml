@@ -5,8 +5,8 @@ services:
     build: 
       context: .
       dockerfile: Dockerfile
-    expose:
-      - "80"
+    ports:
+      - "8000:8000"
     environment: 
       - PUBLIC_JWT=AQUIDEBEIRLALLAVEPUBLICA
     command: npm start
