@@ -493,7 +493,7 @@ router.post('/', function (req, res, next) {
     request(peticion, function(err, re, body){
         if (err) {console.log(err.message);}
         if (re.statusCode == 400) {console.log("Usuario o secret no válidos");}
-        if (re.statusCode == 201) {
+        if (re.statusCode == 201 || re.statusCode == 200) {
             var r =  JSON.parse(body);
             obtenerToken = r["jwt"];
         }
@@ -589,7 +589,7 @@ router.post('/crear', function (req, res, next) {
     request(peticion, function(err, re, body){
         if (err) {console.log(err.message);}
         if (re.statusCode == 400) {console.log("Usuario o secret no válidos");}
-        if (re.statusCode == 201) {
+        if (re.statusCode == 201 || re.statusCode == 200) {
             var r =  JSON.parse(body);
             obtenerToken = r["jwt"];
         }
@@ -668,7 +668,7 @@ router.post('/cambio', function (req, res, next) {
     request(peticion, function(err, re, body){
         if (err) {console.log(err.message);}
         if (re.statusCode == 400) {console.log("Usuario o secret no válidos");}
-        if (re.statusCode == 201) {
+        if (re.statusCode == 201 || re.statusCode == 200) {
             var r =  JSON.parse(body);
             obtenerToken = r["jwt"];
         }
