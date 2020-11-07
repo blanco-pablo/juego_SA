@@ -10,6 +10,7 @@ var jwt = require('jsonwebtoken');
 const urlUsarios = process.env.urlUsarios || 'http://104.155.167.93:8000';
 const urlDados = process.env.urlDados ||'http://104.155.167.93:8001';
 const urlTorneo = process.env.urlTorneo ||'http://104.155.167.93:8002';
+const urlToken = process.env.urlToken ||'http://35.202.77.9/api/token';
 
 var auth = function(req, res, next) {
   if (req.session.user != undefined && req.session != undefined && req.session.admin != false){
@@ -58,8 +59,8 @@ router.post('/generar', function(req, res, next) {
         //Traigo la llave publica
         let archivo = process.env.PUBLIC_JWT;
         var cert = fs.readFileSync('/src/' +archivo);        
-        console.log("Token: "+token);
-        console.log("Header: "+cert);
+        console.log("Token HEADER: "+token);
+        console.log("PUBLIC_JWT: "+cert);
         //COMPRUEBO EL JWT CON RS256
         jwt.verify(token, cert, { algorithms: ['RS256'] }, function (err, payload) {
             // if token alg != RS256,  err == invalid signature
@@ -72,6 +73,7 @@ router.post('/generar', function(req, res, next) {
                     console.log("Se buscar: juegos.generar y encontro: "+element);
                     if (element == 'juegos.generar') {
                         valido = true;
+                        break;
                     }
                 }
             }
@@ -155,6 +157,46 @@ function registrarlog(url,action) {
 }
 
 router.post('/simular', function(req, res, next) {
+    //variable para dejar pasar 
+    console.log('Entro a simular partida');
+    let valido = false;
+    //vamos a verificar clave
+    if (process.env.VERIFICAR_JWT == 'true') {
+        // Traigo los headers
+        let authHeader = req.headers.authorization;
+        let token = authHeader.split(" ");
+        token = token[1]
+        
+        //Traigo la llave publica
+        let archivo = process.env.PUBLIC_JWT;
+        var cert = fs.readFileSync('/src/' +archivo);        
+        console.log("Token HEADER: "+token);
+        console.log("PUBLIC_JWT: "+cert);
+        //COMPRUEBO EL JWT CON RS256
+        jwt.verify(token, cert, { algorithms: ['RS256'] }, function (err, payload) {
+            // if token alg != RS256,  err == invalid signature
+            if (err) {
+                console.log(err.message);
+                valido = false;
+            }else{
+                for (let index = 0; index < payload['scopes'].length; index++) {
+                    const element = payload['scopes'][index];
+                    console.log("Se buscar: juegos.generar y encontro: "+element);
+                    if (element == 'juegos.simular') {
+                        valido = true;
+                        break;
+                    }
+                }
+            }
+        });
+        //si no es valido lo saco
+        if(valido == false){
+            console.log("NOT autolizado");
+            res.status(401).send("NOT_AUTHORIZED"); 
+            return 0;
+        }
+        console.log("Si fue autorizado");
+    }
     try {
         var idPartida = req.body['id'];
         var id1 = req.body['jugadores'][0];
@@ -417,15 +459,22 @@ router.get('/', auth,function(req, res, next) {
 // LOGICA DEL LOGIN
 router.post('/', function (req, res, next) {
     // CONFIGURACION DE DATOS
+    let obtenerToken = solicitarToken(process.env.TOKEN_ID,process.env.TOKEN_SECRET);
+    console.log("Obtuve esto de token");
+    console.log(obtenerToken);
     var options = {
         url: urlUsarios+'/login',
         method: 'GET',
         qs: {
             "email":req.body.username, 
             "password":req.body.password
+        },
+        headers:{
+            "Authorization": "Bearer "+obtenerToken
         }
     }
-    console.log('Voy a hacer peticion '+options);
+    console.log('Voy a hacer peticion ');
+    console.log(options);
     // PREGUNTO SI EXISTE EL USUARIO
     request(options, function(err, re, body){
         req.session.admin  = false;
@@ -626,5 +675,29 @@ router.get('/logout', function (req, res) {
     req.session.destroy();
     res.redirect("/");
   });
+
+function solicitarToken(id,secret) {
+    let peticion = urlToken + '?id='+id+'&secret='+secret;
+    console.log('Solicito un Token');
+    console.log(peticion);
+    request(peticion, function(err, re, body){
+        // ERROR CON SERVICIO
+        if (err) { 
+            console.log(err.message);
+            return '';
+        }
+        //Usuario o secret no válidos
+        if (re.statusCode == 400) {
+            console.log("Usuario o secret no válidos");
+            return '';
+        }
+        // TODO BIEN
+        if (re.statusCode == 201) {
+            console.log("Obtuve token OK");
+            var r =  JSON.parse(body);
+            return r["jwt"];
+        }
+    });
+}
 
 module.exports = router;
