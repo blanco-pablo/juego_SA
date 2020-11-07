@@ -42,7 +42,6 @@ var optionsTorneo = {
         "marcador":[]
     }
 }
-
 var peticion = {
     url: urlToken,
     method: 'POST',
