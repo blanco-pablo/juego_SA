@@ -60,6 +60,7 @@ router.post('/generar', function(req, res, next) {
         let archivo = process.env.PUBLIC_JWT;
         var cert = fs.readFileSync('../'+archivo);
         
+        
         //COMPRUEBO EL JWT CON RS256
         jwt.verify(token, cert, { algorithms: ['RS256'] }, function (err, payload) {
             // if token alg != RS256,  err == invalid signature
