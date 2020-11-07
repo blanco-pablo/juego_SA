@@ -161,6 +161,7 @@ io.on('connect', (socket) => {
             }
 
             request(options, function(err, re, body){
+                
                 if (re.statusCode == 200) {
                     var r =  JSON.parse(body);
                     dice.dice1_val = r["dados"][0];
