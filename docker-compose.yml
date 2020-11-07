@@ -13,7 +13,7 @@ services:
       - urlUsarios=http://104.155.167.93:8000
       - urlDados=http://104.155.167.93:8001
       - urlTorneo=http://104.155.167.93:8002
-      - urlToken=http://35.202.77.9/api/token
+      - urlToken=http://35.202.77.9/token
       - TOKEN_ID=1
       - TOKEN_SECRET=2xsCil8Ga0BLGmnC84P9v8UzHfJpZm9slPEZOaaY
     command: npm start
