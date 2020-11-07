@@ -17,4 +17,10 @@ services:
       - TOKEN_ID=1
       - TOKEN_SECRET=2xsCil8Ga0BLGmnC84P9v8UzHfJpZm9slPEZOaaY
     command: npm start
+  sonarqube:
+    container_name:  sonarqube
+    image:  sonarqube:latest
+    ports:
+        -  "9000:9000"
+        -  "9092:9092"
 

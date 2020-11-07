@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <testsuites>
-<testsuite name="PRUEBA DE SERVER JUEGOS" errors="0" tests="1" failures="0" time="0.006" timestamp="2020-11-07T09:50:34">
+<testsuite name="PRUEBA DE SERVER JUEGOS" errors="0" tests="1" failures="0" time="0.006" timestamp="2020-11-07T09:52:52">
   <testcase classname="PRUEBA DE SERVER JUEGOS" name="Deberia de dar un estado de 200" time="0.006"></testcase>
 </testsuite>
 </testsuites>
