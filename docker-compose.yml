@@ -8,8 +8,9 @@ services:
     ports:
       - "8000:8000"
     environment: 
-      - PUBLIC_JWT=AQUIDEBEIRLALLAVEPUBLICA
-      - urlUsarios=http://104.155.167.93:800
+      - PUBLIC_JWT=oauth-public.key
+      - VERIFICAR_JWT=true
+      - urlUsarios=http://104.155.167.93:8000
       - urlDados=http://104.155.167.93:8001
       - urlTorneo=http://104.155.167.93:8002
     command: npm start

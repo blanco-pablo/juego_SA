@@ -5,6 +5,8 @@ const con       = require('../database');
 const moment    = require('moment');
 const fs        = require('fs');
 const { createLogger, transports ,format} = require('winston');
+var jwt = require('jsonwebtoken');
+
 const urlUsarios = process.env.urlUsarios || 'http://104.155.167.93:8000';
 const urlDados = process.env.urlDados ||'http://104.155.167.93:8001';
 const urlTorneo = process.env.urlTorneo ||'http://104.155.167.93:8002';
@@ -43,6 +45,36 @@ const jsonLog = {URL: "",action: "",dia:"",hora:""};
 
 // ---------------------------- INICIO API PUBLICA
 router.post('/generar', function(req, res, next) {    
+    //variable para dejar pasar 
+    console.log('Entro a generar partida');
+    let valido = false;
+    //vamos a verificar clave
+    if (process.env.VERIFICAR_JWT == 'true') {
+        // Traigo los headers
+        let authHeader = req.headers.authorization;
+        let token = authHeader.split(" ");
+        console.log(token);
+        let token = token[1]
+        
+        //Traigo la llave publica
+        let archivo = process.env.PUBLIC_JWT;
+        var cert = fs.readFileSync('../'+archivo);
+        
+        //COMPRUEBO EL JWT CON RS256
+        jwt.verify(token, cert, { algorithms: ['RS256'] }, function (err, payload) {
+            // if token alg != RS256,  err == invalid signature
+            if (err) {
+                console.log(err.message);
+            }else{
+                console.log(payload);
+            }
+        });
+        //si no es valido lo saco
+        if(valido == false){
+            res.status(401).send("NOT_AUTHORIZED"); 
+            return 0;
+        }
+    }
     // CAPTURO DATOS
     try {
         var idPartida = req.body['id'];
