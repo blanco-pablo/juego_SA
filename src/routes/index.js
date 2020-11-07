@@ -677,7 +677,14 @@ router.get('/logout', function (req, res) {
   });
 
 function solicitarToken(id,secret) {
-    let peticion = urlToken + '?id='+id+'&secret='+secret;
+    var peticion = {
+        url: urlToken,
+        method: 'GET',
+        qs: {
+            "id":id, 
+            "secret":secret
+        }
+    }
     console.log('Solicito un Token');
     console.log(peticion);
     request(peticion, function(err, re, body){
@@ -695,6 +702,8 @@ function solicitarToken(id,secret) {
         if (re.statusCode == 201) {
             console.log("Obtuve token OK");
             var r =  JSON.parse(body);
+            console.log("TODO BIEN ---- ");
+            console.log(r);
             return r["jwt"];
         }
     });
