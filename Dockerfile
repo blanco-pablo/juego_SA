@@ -4,5 +4,6 @@ COPY . .
 RUN npm install
 
 RUN npm test
+RUN npm run sonar
 
 #CMD ["node", "src/index.js"]
