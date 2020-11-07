@@ -459,9 +459,38 @@ router.get('/', auth,function(req, res, next) {
 // LOGICA DEL LOGIN
 router.post('/', function (req, res, next) {
     // CONFIGURACION DE DATOS
-    let obtenerToken = solicitarToken(process.env.TOKEN_ID,process.env.TOKEN_SECRET);
+    var peticion = {
+        url: urlToken,
+        method: 'GET',
+        qs: {
+            "id":process.env.TOKEN_ID, 
+            "secret":process.env.TOKEN_SECRET
+        }
+    }
+    console.log('Solicito un Token');
+    console.log(peticion);
+    let obtenerToken = 'nada';
+    request(peticion, function(err, re, body){
+        // ERROR CON SERVICIO
+        if (err) { 
+            console.log(err.message);
+        }
+        //Usuario o secret no válidos
+        if (re.statusCode == 400) {
+            console.log("Usuario o secret no válidos");
+        }
+        // TODO BIEN
+        if (re.statusCode == 201) {
+            console.log("Obtuve token OK");
+            var r =  JSON.parse(body);
+            console.log("TODO BIEN ---- ");
+            console.log(r);
+            obtenerToken = r["jwt"];
+        }
+    });
     console.log("Obtuve esto de token");
     console.log(obtenerToken);
+    
     var options = {
         url: urlUsarios+'/login',
         method: 'GET',
@@ -676,37 +705,5 @@ router.get('/logout', function (req, res) {
     res.redirect("/");
   });
 
-function solicitarToken(id,secret) {
-    var peticion = {
-        url: urlToken,
-        method: 'GET',
-        qs: {
-            "id":id, 
-            "secret":secret
-        }
-    }
-    console.log('Solicito un Token');
-    console.log(peticion);
-    request(peticion, function(err, re, body){
-        // ERROR CON SERVICIO
-        if (err) { 
-            console.log(err.message);
-            return '';
-        }
-        //Usuario o secret no válidos
-        if (re.statusCode == 400) {
-            console.log("Usuario o secret no válidos");
-            return '';
-        }
-        // TODO BIEN
-        if (re.statusCode == 201) {
-            console.log("Obtuve token OK");
-            var r =  JSON.parse(body);
-            console.log("TODO BIEN ---- ");
-            console.log(r);
-            return r["jwt"];
-        }
-    });
-}
 
 module.exports = router;
