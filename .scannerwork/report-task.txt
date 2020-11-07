@@ -1,6 +1,6 @@
 projectKey=frontend
-serverUrl=http://localhost:9000
+serverUrl=http://34.68.244.180:9000
 serverVersion=8.5.1.38104
-dashboardUrl=http://localhost:9000/dashboard?id=frontend
-ceTaskId=AXWiQDegutlotyCACNyt
-ceTaskUrl=http://localhost:9000/api/ce/task?id=AXWiQDegutlotyCACNyt
+dashboardUrl=http://34.68.244.180:9000/dashboard?id=frontend
+ceTaskId=AXWiS4QSutlotyCACNyv
+ceTaskUrl=http://34.68.244.180:9000/api/ce/task?id=AXWiS4QSutlotyCACNyv
