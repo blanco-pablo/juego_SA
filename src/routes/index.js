@@ -363,6 +363,7 @@ router.get('/juegos', auth,function(req, res, next) {
 
 // RENDER VISTA LOGIN
 router.get('/', auth,function(req, res, next) {
+    console.log(process.env.PUBLIC_JWT);
     res.render('login', { error: false, msm:"Todo bien"});
   });
 
