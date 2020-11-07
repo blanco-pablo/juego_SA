@@ -41,8 +41,6 @@ let game = require('./juego');
 const { Console } = require('console');
 let lastSocket;
 
-
-
 var peticion = {
     url: urlToken,
     method: 'POST',
