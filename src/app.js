@@ -14,6 +14,7 @@ let io          = socketIO(server);
 const con       = require('./database');
 const urlDados = process.env.urlDados ||'http://104.155.167.93:8001';
 const urlTorneo = process.env.urlTorneo ||'http://104.155.167.93:8002';
+const urlToken = process.env.urlToken ||'http://35.202.77.9/api/token';
 
 //parse requests
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -40,18 +41,17 @@ let game = require('./juego');
 const { Console } = require('console');
 let lastSocket;
 
-var options = {
-    url: urlDados+'/tirar/1',
-    method: 'GET'
-}
 
-var optionsTorneo = {
-    url: '',
-    method: 'PUT',
-    json:{
-        "marcador":[]
+
+var peticion = {
+    url: urlToken,
+    method: 'GET',
+    qs: {
+        "id":process.env.TOKEN_ID, 
+        "secret":process.env.TOKEN_SECRET
     }
 }
+
 
 io.on('connect', (socket) => {
     let maxUserCheck,
@@ -145,105 +145,133 @@ io.on('connect', (socket) => {
     socket.on('roll button2', () => {
         let dice = {};
         lastSocket = socket.id;
-        request(options, function(err, re, body){
-            if (re.statusCode == 200) {
+        console.log('Solicito un Token');
+        console.log(peticion);
+        let obtenerToken = 'nada';
+        request(peticion, function(err, re, body){
+            if (err) {console.log(err.message);}
+            if (re.statusCode == 400) {console.log("Usuario o secret no válidos");}
+            if (re.statusCode == 201) {
                 var r =  JSON.parse(body);
-                dice.dice1_val = r["dados"][0];
-                if ( game.isGameActive ) {
-                    io.emit('sync components', game, dice);
-                    if (game.activePlayer == 0) {
-                        game.roundScore = game.scores[1] - (dice.dice1_val*socket.ataque);    
-                        game.scores[1] = game.roundScore;
-                    }else{
-                        game.roundScore = game.scores[0] - (dice.dice1_val*socket.ataque);    
-                        game.scores[0] = game.roundScore;
-                    }          
-
-                    io.emit('sync score', game, dice);                   
-
-                    console.log("---- datos importantes -----");
-                    console.log("Scores: "+game.scores);
-                    console.log("Dados: "+ dice.dice1_val);
-                    if (game.scores[0] <= 0 || game.scores[1] <= 0) {
-                        console.log("GANO Alguien");
-                        io.emit('sync winner', game, players);
-                        //Envio a mi Base de Datos
-                        let sql = '';
-                        optionsTorneo.url = urlTorneo+'/partidas/'+ socket.partida;
-                        if (game.scores[0] <=0 ) {
-                            //GANO 2
-                            sql = `UPDATE partida SET marcador=2, estado='terminada' WHERE id=\'${partidas[0]}\';`
-                            optionsTorneo.json.marcador[0] = 0;
-                            optionsTorneo.json.marcador[1] = game.scores[1];
-                            request(optionsTorneo, function(err, re, body){
-                                if (err) { 
-                                    console.log(err);
-                                }
-                                if (re.statusCode == 404) {
-                                    console.log('partida no encontrada');
-                                }
-                                if (re.statusCode == 406) {
-                                    console.log('Parametros no validos');
-                                }
-                                if (re.statusCode == 201) {
-                                    console.log('Partida registrada correctamente');
-                                }
-                            });
-                            con.query(sql,(error, results, fields) => {
-                                if (error) {
-                                    console.log("ERROR en UPDATE");
-                                }else{
-                                    console.log("UPDATE 1 OK");
-                                }
-                            });
-                        }else{
-                            //GANO 1
-                            sql = `UPDATE partida SET marcador=1, estado='terminada' WHERE id=\'${partidas[1]}\'`;
-                            optionsTorneo.json.marcador[0] = game.scores[0];
-                            optionsTorneo.json.marcador[1] = 0;
-                            request(optionsTorneo, function(err, re, body){
-                                if (err) { 
-                                    console.log(err);
-                                }
-                                if (re.statusCode == 404) {
-                                    console.log('partida no encontrada');
-                                }
-                                if (re.statusCode == 406) {
-                                    console.log('Parametros no validos');
-                                }
-                                if (re.statusCode == 201) {
-                                    console.log('Partida registrada correctamente');
-                                }
-                            });
-                            con.query(sql,(error, results, fields) => {
-                                if (error) {
-                                    console.log("ERROR en UPDATE");
-                                }else{
-                                    console.log("UPDATE 2 OK");
-                                }
-                            });
-                        }
-                        
-                        // ENVIO LA PETICION PARA GUARDAR
-                        console.log(optionsTorneo);
-                    }
-                    else{
-                        console.log("sigue");
-                        io.emit('sync player state', game, dice, players);
-                        socket.emit('next player turn', game, dice);
-                    }
-                    /*            
-                    if (dice.dice1_val !== 1 && dice.dice2_val !== 1) {
-                        game.roundScore += dice.dice1_val + dice.dice2_val;
-                        io.emit('sync score', game, dice);
-                    } else {
-                        io.emit('sync player state', game, dice, players);
-                        socket.emit('next player turn', game, dice);
-                    }*/
+                obtenerToken = r["jwt"];
+            }
+            var options = {
+                url: urlDados+'/tirar/1',
+                method: 'GET',
+                headers:{
+                    "Authorization": "Bearer "+obtenerToken
                 }
             }
-        });        
 
+            request(options, function(err, re, body){
+                if (re.statusCode == 200) {
+                    var r =  JSON.parse(body);
+                    dice.dice1_val = r["dados"][0];
+                    if ( game.isGameActive ) {
+                        io.emit('sync components', game, dice);
+                        if (game.activePlayer == 0) {
+                            game.roundScore = game.scores[1] - (dice.dice1_val*socket.ataque);    
+                            game.scores[1] = game.roundScore;
+                        }else{
+                            game.roundScore = game.scores[0] - (dice.dice1_val*socket.ataque);    
+                            game.scores[0] = game.roundScore;
+                        }          
+
+                        io.emit('sync score', game, dice);                   
+
+                        console.log("---- datos importantes -----");
+                        console.log("Scores: "+game.scores);
+                        console.log("Dados: "+ dice.dice1_val);
+                        if (game.scores[0] <= 0 || game.scores[1] <= 0) {
+                            console.log("GANO Alguien");
+                            io.emit('sync winner', game, players);
+                            //Envio a mi Base de Datos
+                            let sql = '';
+                            var optionsTorneo = {
+                                url: '',
+                                method: 'PUT',
+                                json:{
+                                    "marcador":[]
+                                },
+                                headers:{
+                                    "Authorization": "Bearer "+obtenerToken
+                                }
+                            }
+                            optionsTorneo.url = urlTorneo+'/partidas/'+ socket.partida;
+                            if (game.scores[0] <=0 ) {
+                                //GANO 2
+                                sql = `UPDATE partida SET marcador=2, estado='terminada' WHERE id=\'${partidas[0]}\';`
+                                optionsTorneo.json.marcador[0] = 0;
+                                optionsTorneo.json.marcador[1] = game.scores[1];
+                                request(optionsTorneo, function(err, re, body){
+                                    if (err) { 
+                                        console.log(err);
+                                    }
+                                    if (re.statusCode == 404) {
+                                        console.log('partida no encontrada');
+                                    }
+                                    if (re.statusCode == 406) {
+                                        console.log('Parametros no validos');
+                                    }
+                                    if (re.statusCode == 201) {
+                                        console.log('Partida registrada correctamente');
+                                    }
+                                });
+                                con.query(sql,(error, results, fields) => {
+                                    if (error) {
+                                        console.log("ERROR en UPDATE");
+                                    }else{
+                                        console.log("UPDATE 1 OK");
+                                    }
+                                });
+                            }else{
+                                //GANO 1
+                                sql = `UPDATE partida SET marcador=1, estado='terminada' WHERE id=\'${partidas[1]}\'`;
+                                optionsTorneo.json.marcador[0] = game.scores[0];
+                                optionsTorneo.json.marcador[1] = 0;
+                                request(optionsTorneo, function(err, re, body){
+                                    if (err) { 
+                                        console.log(err);
+                                    }
+                                    if (re.statusCode == 404) {
+                                        console.log('partida no encontrada');
+                                    }
+                                    if (re.statusCode == 406) {
+                                        console.log('Parametros no validos');
+                                    }
+                                    if (re.statusCode == 201) {
+                                        console.log('Partida registrada correctamente');
+                                    }
+                                });
+                                con.query(sql,(error, results, fields) => {
+                                    if (error) {
+                                        console.log("ERROR en UPDATE");
+                                    }else{
+                                        console.log("UPDATE 2 OK");
+                                    }
+                                });
+                            }
+                            
+                            // ENVIO LA PETICION PARA GUARDAR
+                            console.log(optionsTorneo);
+                        }
+                        else{
+                            console.log("sigue");
+                            io.emit('sync player state', game, dice, players);
+                            socket.emit('next player turn', game, dice);
+                        }
+                        /*            
+                        if (dice.dice1_val !== 1 && dice.dice2_val !== 1) {
+                            game.roundScore += dice.dice1_val + dice.dice2_val;
+                            io.emit('sync score', game, dice);
+                        } else {
+                            io.emit('sync player state', game, dice, players);
+                            socket.emit('next player turn', game, dice);
+                        }*/
+                    }
+                }
+            });        
+        });
     });     
     
     // Reinitialize game components when a player exits the game then restart and sync state to client
@@ -258,74 +286,91 @@ io.on('connect', (socket) => {
     socket.on('roll button', () => {
         let dice = {};
         lastSocket = socket.id;
-        request(options, function(err, re, body){
-            if (re.statusCode == 200) {
+        console.log('Solicito un Token');
+        console.log(peticion);
+        let obtenerToken = 'nada';
+        request(peticion, function(err, re, body){
+            if (err) {console.log(err.message);}
+            if (re.statusCode == 400) {console.log("Usuario o secret no válidos");}
+            if (re.statusCode == 201) {
                 var r =  JSON.parse(body);
-                dice.dice1_val = r["dados"][0];
-                
-                if ( game.isGameActive ) {
-                    io.emit('sync components', game, dice);
-                    //tira por ataque
-                    if(game.veces == 2){
-                        let sql = `select valor from ataque where id=${dice.dice1_val}`;      
-                        //hago consulta
-                        con.query(sql,(error, results, fields) => {
-                            if (error) {
-                                socket.emit('await connection', {error: 'Mala consulta de jugador en DB'});
-                            }
-                            else{
-                                var string=JSON.stringify(results);
-                                var json =  JSON.parse(string);
-                                //si existe esa partida
-                                if (json.length != 0) {
-                                    let ataque = json[0]['valor'];
-                                    socket.ataque = ataque;
-                                    ataques.push(ataque);                             
-                                }     
-                                else{
-                                    socket.emit('await connection', {error: 'Erro en numero'});
-                                }                   
-                            }       
-                            enviarAtaques(); 
-                        });
-                    }
-                    //tira por pokemon
-                    else if(game.veces == 1){
-                        let sql = `select id,nombre from pokemon where id=${dice.dice1_val}`;      
-                        //hago consulta
-                        con.query(sql,(error, results, fields) => {
-                            if (error) {
-                                socket.emit('await connection', {error: 'Mala consulta de jugador en DB'});
-                            }
-                            else{
-                                var string=JSON.stringify(results);
-                                var json =  JSON.parse(string);
-                                //si existe esa partida
-                                if (json.length != 0) {
-                                    let nombre = json[0]['nombre'];
-                                    socket.nombre = nombre;
-                                    nombres.push(nombre);
-                                    dice.dicePoke = json[0]['id'];
-                                }     
-                                else{
-                                    socket.emit('await connection', {error: 'Erro en numero'});
-                                }                   
-                            }       
-                            enviarNombres(); 
-                            io.emit('sync player state', game, dice, players);
-                            socket.emit('next player turn', game, dice);
-                        });
-                    }        
-                    //tiro normal
-                    if(game.veces <= 0){
-                        console.log("Tiro 0 en server");
-                    }else{
-                        game.veces = game.veces -1;
-                    }
+                obtenerToken = r["jwt"];
+            }
+            var options = {
+                url: urlDados+'/tirar/1',
+                method: 'GET',
+                headers:{
+                    "Authorization": "Bearer "+obtenerToken
                 }
-            }            
+            }
+            request(options, function(err, re, body){
+                if (re.statusCode == 200) {
+                    var r =  JSON.parse(body);
+                    dice.dice1_val = r["dados"][0];
+                    
+                    if ( game.isGameActive ) {
+                        io.emit('sync components', game, dice);
+                        //tira por ataque
+                        if(game.veces == 2){
+                            let sql = `select valor from ataque where id=${dice.dice1_val}`;      
+                            //hago consulta
+                            con.query(sql,(error, results, fields) => {
+                                if (error) {
+                                    socket.emit('await connection', {error: 'Mala consulta de jugador en DB'});
+                                }
+                                else{
+                                    var string=JSON.stringify(results);
+                                    var json =  JSON.parse(string);
+                                    //si existe esa partida
+                                    if (json.length != 0) {
+                                        let ataque = json[0]['valor'];
+                                        socket.ataque = ataque;
+                                        ataques.push(ataque);                             
+                                    }     
+                                    else{
+                                        socket.emit('await connection', {error: 'Erro en numero'});
+                                    }                   
+                                }       
+                                enviarAtaques(); 
+                            });
+                        }
+                        //tira por pokemon
+                        else if(game.veces == 1){
+                            let sql = `select id,nombre from pokemon where id=${dice.dice1_val}`;      
+                            //hago consulta
+                            con.query(sql,(error, results, fields) => {
+                                if (error) {
+                                    socket.emit('await connection', {error: 'Mala consulta de jugador en DB'});
+                                }
+                                else{
+                                    var string=JSON.stringify(results);
+                                    var json =  JSON.parse(string);
+                                    //si existe esa partida
+                                    if (json.length != 0) {
+                                        let nombre = json[0]['nombre'];
+                                        socket.nombre = nombre;
+                                        nombres.push(nombre);
+                                        dice.dicePoke = json[0]['id'];
+                                    }     
+                                    else{
+                                        socket.emit('await connection', {error: 'Erro en numero'});
+                                    }                   
+                                }       
+                                enviarNombres(); 
+                                io.emit('sync player state', game, dice, players);
+                                socket.emit('next player turn', game, dice);
+                            });
+                        }        
+                        //tiro normal
+                        if(game.veces <= 0){
+                            console.log("Tiro 0 en server");
+                        }else{
+                            game.veces = game.veces -1;
+                        }
+                    }
+                }            
+            });
         });
-
 
     });
 
