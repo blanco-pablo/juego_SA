@@ -470,27 +470,31 @@ router.post('/', function (req, res, next) {
     console.log('Solicito un Token');
     console.log(peticion);
     let obtenerToken = 'nada';
-    request(peticion, function(err, re, body){
-        // ERROR CON SERVICIO
-        if (err) { 
-            console.log(err.message);
-        }
-        //Usuario o secret no válidos
-        if (re.statusCode == 400) {
-            console.log("Usuario o secret no válidos");
-        }
-        // TODO BIEN
-        if (re.statusCode == 201) {
-            console.log("Obtuve token OK");
-            var r =  JSON.parse(body);
-            console.log("TODO BIEN ---- ");
-            console.log(r);
-            obtenerToken = r["jwt"];
-        }
+
+    return new Promise(function(resolve, reject) {
+        request(peticion, function(err, re, body){
+            // ERROR CON SERVICIO
+            if (err) { 
+                console.log(err.message);
+            }
+            //Usuario o secret no válidos
+            if (re.statusCode == 400) {
+                console.log("Usuario o secret no válidos");
+            }
+            // TODO BIEN
+            if (re.statusCode == 201) {
+                console.log("Obtuve token OK");
+                var r =  JSON.parse(body);
+                console.log("TODO BIEN ---- ");
+                console.log(r);
+                obtenerToken = r["jwt"];
+            }
+        });
     });
+    
     console.log("Obtuve esto de token");
     console.log(obtenerToken);
-    
+
     var options = {
         url: urlUsarios+'/login',
         method: 'GET',
