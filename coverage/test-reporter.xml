@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testExecutions version="1">
+    <file path="/home/pablo/juego_SA/src/test/index.test.js">
+        <testCase name="Get Endpoints Get" duration="59">
+            <failure message="Error: listen EADDRINUSE: address already in use :::8000"><![CDATA[Error: listen EADDRINUSE: address already in use :::8000
+    at Server.setupListenHandle [as _listen2] (net.js:1317:16)
+    at listenInCluster (net.js:1365:12)
+    at Server.listen (net.js:1451:7)
+    at Object.<anonymous> (/home/pablo/juego_SA/src/index.js:4:18)
+    at Runtime._execModule (/home/pablo/juego_SA/node_modules/jest-runtime/build/index.js:1299:24)
+    at Runtime._loadModule (/home/pablo/juego_SA/node_modules/jest-runtime/build/index.js:898:12)
+    at Runtime.requireModule (/home/pablo/juego_SA/node_modules/jest-runtime/build/index.js:746:10)
+    at Runtime.require [as requireModuleOrMock] (/home/pablo/juego_SA/node_modules/jest-runtime/build/index.js:919:21)
+    at Object.<anonymous> (/home/pablo/juego_SA/src/test/index.test.js:3:17)
+    at Runtime._execModule (/home/pablo/juego_SA/node_modules/jest-runtime/build/index.js:1299:24)]]></failure>
+        </testCase>
+    </file>
+</testExecutions>

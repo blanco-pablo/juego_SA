@@ -5,8 +5,21 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/index.js",
-    "test": "jasmine-node spec --verbose --junitreport --color"
+    "test": "jasmine-node spec --verbose --junitreport --color",    
+    "sonar":  "node sonar-project.js"
   },
+  "jest": {
+    "testEnvironment":  "node",
+    "coveragePathIgnorePatterns": [
+        "/node_modules/"
+    ],
+    "testResultsProcessor":  "jest-sonar-reporter"
+},
+"jestSonar": {
+    "reportPath":  "coverage",
+    "reportFile":  "test-reporter.xml",
+    "indent":  4
+},
   "engines": {
     "node": "12.16.2"
   },

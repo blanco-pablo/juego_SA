@@ -55,8 +55,9 @@ const jsonLog = {URL: "",action: "",dia:"",hora:""};
 
 // ---------------------------- INICIO API PUBLICA
 router.get('/comprobar', function(req, res, next) { 
-    res.status(200).send("SERVER OK"); 
+    res.status(200).json({ nome:  'Ok ' });
 });
+
 router.post('/generar', function(req, res, next) {    
     //variable para dejar pasar 
     console.log('Entro a generar partida');
