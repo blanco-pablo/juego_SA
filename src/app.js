@@ -56,7 +56,6 @@ io.on('connect', (socket) => {
         clientId = socket.client.id;    
 
     connections.push(clientId);
-
     maxUserCheck = connections.length > 2 ? false : true;
 
     // Create a new session if players are over 2
