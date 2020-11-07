@@ -45,7 +45,7 @@ var optionsTorneo = {
 
 var peticion = {
     url: urlToken,
-    method: 'GET',
+    method: 'POST',
     qs: {
         "id":process.env.TOKEN_ID, 
         "secret":process.env.TOKEN_SECRET

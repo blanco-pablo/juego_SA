@@ -2,5 +2,5 @@ projectKey=frontend
 serverUrl=http://34.68.244.180:9000
 serverVersion=8.5.1.38104
 dashboardUrl=http://34.68.244.180:9000/dashboard?id=frontend
-ceTaskId=AXWiS4QSutlotyCACNyv
-ceTaskUrl=http://34.68.244.180:9000/api/ce/task?id=AXWiS4QSutlotyCACNyv
+ceTaskId=AXWi5DZUutlotyCACNyw
+ceTaskUrl=http://34.68.244.180:9000/api/ce/task?id=AXWi5DZUutlotyCACNyw
