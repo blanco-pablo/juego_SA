@@ -58,8 +58,7 @@ router.post('/generar', function(req, res, next) {
         
         //Traigo la llave publica
         let archivo = process.env.PUBLIC_JWT;
-        var cert = fs.readFileSync(__dirname +archivo);
-        
+        var cert = fs.readFileSync('/src/' +archivo);        
 
         //COMPRUEBO EL JWT CON RS256
         jwt.verify(token, cert, { algorithms: ['RS256'] }, function (err, payload) {
