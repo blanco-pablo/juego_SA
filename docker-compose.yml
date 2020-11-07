@@ -13,7 +13,7 @@ services:
       - urlUsarios=http://18.191.208.8:3050
       - urlDados=http://35.225.47.35:5002
       - urlTorneo=http://13.67.221.132:5000
-      - urlToken=http://35.232.54.106:80
+      - urlToken=http://35.232.54.106:80/token
       - TOKEN_ID=juegos5
       - TOKEN_SECRET=juegos5-567
     command: npm start
