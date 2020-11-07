@@ -12,8 +12,9 @@ const http      = require('http');
 let server      = http.createServer(app);
 let io          = socketIO(server);
 const con       = require('./database');
-const urlDados = 'http://104.155.167.93:8001';
-const urlTorneo = 'http://104.155.167.93:8002';
+const urlDados = process.env.urlDados ||'http://104.155.167.93:8001';
+const urlTorneo = process.env.urlTorneo ||'http://104.155.167.93:8002';
+
 
 //parse requests
 app.use(bodyParser.urlencoded({ extended: true }));

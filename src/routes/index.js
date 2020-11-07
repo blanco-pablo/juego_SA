@@ -5,9 +5,9 @@ const con       = require('../database');
 const moment    = require('moment');
 const fs        = require('fs');
 const { createLogger, transports ,format} = require('winston');
-const urlUsarios = 'http://104.155.167.93:8000';
-const urlDados = 'http://104.155.167.93:8001';
-const urlTorneo = 'http://104.155.167.93:8002';
+const urlUsarios = process.env.urlUsarios || 'http://104.155.167.93:8000';
+const urlDados = process.env.urlDados ||'http://104.155.167.93:8001';
+const urlTorneo = process.env.urlTorneo ||'http://104.155.167.93:8002';
 
 var auth = function(req, res, next) {
   if (req.session.user != undefined && req.session != undefined && req.session.admin != false){
@@ -363,7 +363,7 @@ router.get('/juegos', auth,function(req, res, next) {
 
 // RENDER VISTA LOGIN
 router.get('/', auth,function(req, res, next) {
-    console.log(process.env.PUBLIC_JWT);
+    console.log("render login"+process.env.PUBLIC_JWT);
     res.render('login', { error: false, msm:"Todo bien"});
   });
 
