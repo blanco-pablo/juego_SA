@@ -54,7 +54,7 @@ router.post('/generar', function(req, res, next) {
         let authHeader = req.headers.authorization;
         let token = authHeader.split(" ");
         console.log(token);
-        let token = token[1]
+        token = token[1]
         
         //Traigo la llave publica
         let archivo = process.env.PUBLIC_JWT;
