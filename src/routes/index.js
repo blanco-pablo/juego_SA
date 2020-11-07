@@ -167,29 +167,35 @@ router.post('/simular', function(req, res, next) {
             url: urlUsarios+'/jugadores/'+id2,
             method: 'GET'
         }
-        
+        console.log('Entro a simular partida');
         // PREGUNTO SI EXISTE EL USUARIO 1
         request(options1, function(err, re, body){
             // ERROR CON SERVICIO
             if (err) {
+                console.log('errpr cpm server 1');
                 logger.error(registrarlog(options1['url'],"Error con servidor de usuarios 1"));
                 res.status(406).send("Parámetros no válidos"); 
             }
             // ERROR NO EXISTE USUARIO
             else if (re.statusCode == 404) {
+                console.log('jugador 1 no encontardo ');
                 logger.error(registrarlog(options1['url'],"Jugador 1 no encontrado"));
                 res.status(404).send("Jugador no encontrado"); 
             }
             // TODO BIEN, RENDER INICIO
             else if (re.statusCode == 200) {
+                console.log('Jugador 1 Encontrado');
                 logger.error(registrarlog(options1['url'],"Se encontro Jugador 1"));
                 // PREGUNTO SI EXISTE EL USUARIO
+                console.log('Busco a jugador 2');
                 request(options2, function(e, r, b){        
                     if (r.statusCode == 404) {
+                        console.log('Jugador No encontrado');
                         logger.error(registrarlog(options2['url'],"Jugador 2 no encontrado"));
                         res.status(404).send("Jugador no encontrado"); 
                     }
                     else if (r.statusCode == 200) {
+                        console.log('Jugador 2 OK');
                         logger.error(registrarlog(options2['url'],"Se encontro Jugador 2"));
                         let sql = `INSERT INTO partida(id,idJugador1,idJugador2)
                         VALUES(\"${idPartida}\",${id1},${id2})`;
@@ -198,6 +204,7 @@ router.post('/simular', function(req, res, next) {
                                 logger.error(registrarlog(options1['url'],error.message));
                                 res.status(406).send("Parámetros no válidos"); 
                             }else{
+                                console.log('Inserto partida a BASE DE DATOS');
                                 logger.error(registrarlog(options1['url'],"Se creo partida para jugador 1"));
                                 logger.error(registrarlog(options2['url'],"Se creo partida para jugador 2"));
                                 res.status(201).send("Partida simulada");
@@ -241,8 +248,8 @@ router.post('/simular', function(req, res, next) {
                                         }                                        
                                         logger.error(registrarlog('LOCAL',"Nombre 1 "+ataque1));
                                         logger.error(registrarlog('LOCAL',"Nombre 2 "+ataque2));
-                                        console.log("N1: "+nombre1);
-                                        console.log("N2: "+nombre2);
+                                        console.log("Nombre 1 : "+nombre1);
+                                        console.log("Nombre 2: "+nombre2);
                                         let termino = true;
                                         let turno = 0;
                                         //llamo a la recursividad
@@ -404,7 +411,6 @@ router.get('/juegos', auth,function(req, res, next) {
 
 // RENDER VISTA LOGIN
 router.get('/', auth,function(req, res, next) {
-    console.log("render login"+process.env.PUBLIC_JWT);
     res.render('login', { error: false, msm:"Todo bien"});
   });
 
@@ -419,6 +425,7 @@ router.post('/', function (req, res, next) {
             "password":req.body.password
         }
     }
+    console.log('Voy a hacer peticion '+options);
     // PREGUNTO SI EXISTE EL USUARIO
     request(options, function(err, re, body){
         req.session.admin  = false;
@@ -431,11 +438,13 @@ router.post('/', function (req, res, next) {
         }
         // ERROR NO EXISTE USUARIO
         if (re.statusCode == 400) {
+            console.log("Usuario o contra no coinciden");
             logger.error(registrarlog(options['url'],"Usuario o contra no coinciden"));
             res.render('login', { error: true, msm:"Usuario o contra no coinciden"});
         }
         // TODO BIEN, RENDER INICIO
         if (re.statusCode == 200) {
+            console.log("Login OK");
             logger.error(registrarlog(options['url'],"Login Usuario OK"));
             //res.render('index', { error: false, msm:"Todo bien",usuario:body});
             usuario = JSON.parse(body);
@@ -449,6 +458,8 @@ router.post('/', function (req, res, next) {
                         url: urlUsarios+'/jugadores',
                         method: 'GET'
                     }
+                    console.log("Traigo todos los usuarios si es admin");
+                    console.log(options3);
                     // TRAIGO LISTADO DE JUGADORES SI ES ADMIN
                     request(options3, function(err2, re2, body2){
                         // ERROR CON SERVICIO
@@ -457,7 +468,8 @@ router.post('/', function (req, res, next) {
                             logger.error(registrarlog(options3['url'],"ERROR con servidor"));
                         }
                         // TODO BIEN, RENDER INICIO
-                        if (re2.statusCode == 200) {                            
+                        if (re2.statusCode == 200) {      
+                            console.log('Consigue el listado de todos los jugadores');                      
                             logger.error(registrarlog(options3['url'],"Consigue el listado de todos los jugadores"));
                             usuarios = JSON.parse(body2);
                             req.session.usuarios = usuarios;
@@ -482,6 +494,7 @@ router.get('/index',auth, function (req, res, next) {
 
 // LOGICA DE CREAR USUARIO
 router.post('/crear', function (req, res, next) {
+    console.log('Entro a crear usuario');
     // CAPTURO DATOS
     var options = {
        url: urlUsarios+'/jugadores',
@@ -495,6 +508,7 @@ router.post('/crear', function (req, res, next) {
            "administrador":(req.body.administrador =='true')
        }
    }
+   console.log(options);
    // CREO EL USUARIO
    request(options, function(err, re, body){
        // ERROR CON SERVICIO
@@ -505,17 +519,20 @@ router.post('/crear', function (req, res, next) {
        }
        // ERROR Datos inválidos
        if (re.statusCode == 406) {
+        console.log("Datos inválidos en POST de usarios");
            logger.error(registrarlog(options['url'],"Datos inválidos en POST de usarios"));
            res.render('index', { error: true, msm:"Datos inválidos en POST",usuario:req.session.user,usuarios:req.session.usuarios,si:"si"});
        }
        // TODO BIEN, RENDER INICIO
        if (re.statusCode == 201) {
+            console.log("Usuario creado");
             logger.error(registrarlog(options['url'],"Usuario creado"));
             // CONFIGURACION DE DATOS
             options3 = {
                 url: urlUsarios+'/jugadores',
                 method: 'GET'
             }
+            console.log("Get todos los jugadores");
             // TRAIGO LISTADO DE JUGADORES SI ES ADMIN
             request(options3, function(err2, re2, body2){
                 // ERROR CON SERVICIO
@@ -524,7 +541,8 @@ router.post('/crear', function (req, res, next) {
                     logger.error(registrarlog(options3['url'],"ERROR con servidor"));
                 }
                 // TODO BIEN, RENDER INICIO
-                if (re2.statusCode == 200) {                            
+                if (re2.statusCode == 200) {    
+                    console.log("Consigue el listado de todos los jugadores");                        
                     logger.error(registrarlog(options3['url'],"Consigue el listado de todos los jugadores"));
                     req.session.user = JSON.parse(body2);
                     //console.log(usuarios);
@@ -537,6 +555,7 @@ router.post('/crear', function (req, res, next) {
 
 // LOGICA DE CAMBIO DE DATOS
 router.post('/cambio', function (req, res, next) {
+    console.log('Entro a cambiar datos');
      // CAPTURO DATOS
      var options = {
         url: urlUsarios+'/jugadores/'+req.session.user['id'],
@@ -600,6 +619,7 @@ router.post('/cambio', function (req, res, next) {
 
 // Logout endpoint
 router.get('/logout', function (req, res) {
+    console.log('LOGOUT');
     req.session.user = undefined;
     req.session.admin = false;
     req.session.usuarios = null;
