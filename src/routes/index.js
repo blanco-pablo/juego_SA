@@ -67,6 +67,13 @@ router.post('/generar', function(req, res, next) {
                 console.log(err.message);
             }else{
                 console.log(payload);
+                for (let index = 0; index < payload['scopes'].length; index++) {
+                    const element = payload['scopes'][index];
+                    console.log(element);
+                    if (element == 'juegos.generar') {
+                        valido = true;
+                    }
+                }
             }
         });
         //si no es valido lo saco
