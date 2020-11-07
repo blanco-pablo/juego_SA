@@ -111,55 +111,71 @@ router.post('/generar', function(req, res, next) {
         var idPartida = req.body['id'];
         var id1 = req.body['jugadores'][0];
         var id2 = req.body['jugadores'][1];
-        var options1 = {
-            url: urlUsarios+'/jugadores/'+id1,
-            method: 'GET'
-        }
-        var options2 = {
-            url: urlUsarios+'/jugadores/'+id2,
-            method: 'GET'
-        }
-        
-        // PREGUNTO SI EXISTE EL USUARIO
-        request(options1, function(err, re, body){
-            // ERROR CON SERVICIO
-            if (err) {
-                logger.error(registrarlog(options1['url'],"Error con servidor de usuarios"));
-                res.status(406).send("Parámetros no válidos"); 
+        console.log('Solicito un Token');
+        console.log(peticion);
+        let obtenerToken = 'nada';
+        request(peticion, function(err, re, body){
+            if (err) {console.log(err.message);}
+            if (re.statusCode == 400) {console.log("Usuario o secret no válidos");}
+            if (re.statusCode == 201 || re.statusCode == 200) {
+                var r =  JSON.parse(body);
+                obtenerToken = r["jwt"];
             }
-            // ERROR NO EXISTE USUARIO
-            else if (re.statusCode == 404) {
-                logger.error(registrarlog(options1['url'],"Jugador no encontrado"));
-                res.status(404).send("Jugador no encontrado"); 
+            var options1 = {
+                url: urlUsarios+'/jugadores/'+id1,
+                method: 'GET',
+                headers:{
+                    "Authorization": "Bearer "+obtenerToken
+                }
             }
-            // TODO BIEN, RENDER INICIO
-            else if (re.statusCode == 200) {
-                logger.error(registrarlog(options1['url'],"Se encontro Jugador 1"));
-                // PREGUNTO SI EXISTE EL USUARIO
-                request(options2, function(e, r, b){        
-                    if (r.statusCode == 404) {
-                        logger.error(registrarlog(options2['url'],"Jugador no encontrado"));
-                        res.status(404).send("Jugador no encontrado"); 
-                    }
-                    else if (r.statusCode == 200) {
-                        logger.error(registrarlog(options2['url'],"Se encontro Jugador 2"));
-                        let sql = `INSERT INTO partida(id,idJugador1,idJugador2)
-                        VALUES(\"${idPartida}\",${id1},${id2})`;
-                        con.query(sql,(error, results, fields) => {
-                            if (error) {
-                                logger.error(registrarlog(options1['url'],error.message));
-                                res.status(406).send("Parámetros no válidos"); 
-                            }else{
-                                logger.error(registrarlog(options1['url'],"Se creo partida para jugador 1"));
-                                logger.error(registrarlog(options2['url'],"Se creo partida para jugador 2"));
-                                res.status(201).send("Partida creada");
-                            }
-                        });
-                    }
-                });
-            } 
+            var options2 = {
+                url: urlUsarios+'/jugadores/'+id2,
+                method: 'GET',
+                headers:{
+                    "Authorization": "Bearer "+obtenerToken
+                }
+            }
+            
+            // PREGUNTO SI EXISTE EL USUARIO
+            request(options1, function(err, re, body){
+                // ERROR CON SERVICIO
+                if (err) {
+                    logger.error(registrarlog(options1['url'],"Error con servidor de usuarios"));
+                    res.status(406).send("Parámetros no válidos"); 
+                }
+                // ERROR NO EXISTE USUARIO
+                else if (re.statusCode == 404) {
+                    logger.error(registrarlog(options1['url'],"Jugador no encontrado"));
+                    res.status(404).send("Jugador no encontrado"); 
+                }
+                // TODO BIEN, RENDER INICIO
+                else if (re.statusCode == 200) {
+                    logger.error(registrarlog(options1['url'],"Se encontro Jugador 1"));
+                    // PREGUNTO SI EXISTE EL USUARIO
+                    request(options2, function(e, r, b){        
+                        if (r.statusCode == 404) {
+                            logger.error(registrarlog(options2['url'],"Jugador no encontrado"));
+                            res.status(404).send("Jugador no encontrado"); 
+                        }
+                        else if (r.statusCode == 200) {
+                            logger.error(registrarlog(options2['url'],"Se encontro Jugador 2"));
+                            let sql = `INSERT INTO partida(id,idJugador1,idJugador2)
+                            VALUES(\"${idPartida}\",${id1},${id2})`;
+                            con.query(sql,(error, results, fields) => {
+                                if (error) {
+                                    logger.error(registrarlog(options1['url'],error.message));
+                                    res.status(406).send("Parámetros no válidos"); 
+                                }else{
+                                    logger.error(registrarlog(options1['url'],"Se creo partida para jugador 1"));
+                                    logger.error(registrarlog(options2['url'],"Se creo partida para jugador 2"));
+                                    res.status(201).send("Partida creada");
+                                }
+                            });
+                        }
+                    });
+                } 
+            });
         });
-    
     } catch (error) {
         if (error instanceof TypeError) {
             logger.error('LOCAL',"Error con servidor de usuarios");
@@ -202,7 +218,7 @@ router.post('/simular', function(req, res, next) {
                 }else{
                     for (let index = 0; index < payload['scopes'].length; index++) {
                         const element = payload['scopes'][index];
-                        console.log("Se buscar: juegos.generar y encontro: "+element);
+                        console.log("Se buscar: juegos.simular y encontro: "+element);
                         if (element == 'juegos.simular') {
                             valido = true;
                             break;
@@ -228,110 +244,139 @@ router.post('/simular', function(req, res, next) {
         var idPartida = req.body['id'];
         var id1 = req.body['jugadores'][0];
         var id2 = req.body['jugadores'][1];
-        var options1 = {
-            url: urlUsarios+'/jugadores/'+id1,
-            method: 'GET'
-        }
-        var options2 = {
-            url: urlUsarios+'/jugadores/'+id2,
-            method: 'GET'
-        }
-        console.log('Entro a simular partida');
+        
+        console.log('Peticion a jugadores');
         // PREGUNTO SI EXISTE EL USUARIO 1
-        request(options1, function(err, re, body){
-            // ERROR CON SERVICIO
-            if (err) {
-                console.log('errpr cpm server 1');
-                logger.error(registrarlog(options1['url'],"Error con servidor de usuarios 1"));
-                res.status(406).send("Parámetros no válidos"); 
+        console.log('Solicito un Token');
+        console.log(peticion);
+        let obtenerToken = 'nada';
+        request(peticion, function(err, re, body){
+            if (err) {console.log(err.message);}
+            if (re.statusCode == 400) {console.log("Usuario o secret no válidos");}
+            if (re.statusCode == 201 || re.statusCode == 200) {
+                var r =  JSON.parse(body);
+                obtenerToken = r["jwt"];
             }
-            // ERROR NO EXISTE USUARIO
-            else if (re.statusCode == 404) {
-                console.log('jugador 1 no encontardo ');
-                logger.error(registrarlog(options1['url'],"Jugador 1 no encontrado"));
-                res.status(404).send("Jugador no encontrado"); 
+            var options1 = {
+                url: urlUsarios+'/jugadores/'+id1,
+                method: 'GET',
+                headers:{
+                    "Authorization": "Bearer "+obtenerToken
+                }
             }
-            // TODO BIEN, RENDER INICIO
-            else if (re.statusCode == 200) {
-                console.log('Jugador 1 Encontrado');
-                logger.error(registrarlog(options1['url'],"Se encontro Jugador 1"));
-                // PREGUNTO SI EXISTE EL USUARIO
-                console.log('Busco a jugador 2');
-                request(options2, function(e, r, b){        
-                    if (r.statusCode == 404) {
-                        console.log('Jugador No encontrado');
-                        logger.error(registrarlog(options2['url'],"Jugador 2 no encontrado"));
-                        res.status(404).send("Jugador no encontrado"); 
-                    }
-                    else if (r.statusCode == 200) {
-                        console.log('Jugador 2 OK');
-                        logger.error(registrarlog(options2['url'],"Se encontro Jugador 2"));
-                        let sql = `INSERT INTO partida(id,idJugador1,idJugador2)
-                        VALUES(\"${idPartida}\",${id1},${id2})`;
-                        con.query(sql,(error, results, fields) => {
-                            if (error) {
-                                logger.error(registrarlog(options1['url'],error.message));
-                                res.status(406).send("Parámetros no válidos"); 
-                            }else{
-                                console.log('Inserto partida a BASE DE DATOS');
-                                logger.error(registrarlog(options1['url'],"Se creo partida para jugador 1"));
-                                logger.error(registrarlog(options2['url'],"Se creo partida para jugador 2"));
-                                res.status(201).send("Partida simulada");
-                                //comienza la simulacion
-                                console.log("Comieza Simulacion");
-                                //lanzo dados 4 veces
-                                //2 para jugador 1
-                                //2 para jugador 2
-                                dados.url = urlDados+ '/tirar/4';
-                                request(dados, function(err, re, body){
-                                    var r =  JSON.parse(body);
-                                    let ataque1 = r["dados"][0];
-                                    let ataque2 = r["dados"][1];
-                                    let nombre1 = r["dados"][2];
-                                    let nombre2 = r["dados"][3];
-                                    let vidas = [100,100];
-                                    let ataques = [ataque1,ataque2];
-                                    console.log("Se lanzaron 4 dados");
-                                    console.log(r['dados']);
-                                    logger.error(registrarlog(dados['url'],"Se lanzo 4 veces el dado"));
-                                    logger.error(registrarlog(dados['url'],r['dados']));
-                                         
-                                    ataque1 = Math.floor(Math.random() * (10 - 1)) + 1;
-                                    ataque2 = Math.floor(Math.random() * (10 - 1)) + 1;
-                                    ataques = [ataque1,ataque2];
-                                    console.log("ataques: "+ataques);
-                                    logger.error(registrarlog('LOCAL',"Ataque 1 "+ataque1));
-                                    logger.error(registrarlog('LOCAL',"Ataque 2 "+ataque2));
-                                    console.log(`ID1: ${nombre1} ID2: ${nombre2}`)
-                                    let sql = `select nombre from pokemon 
-                                    where id=${nombre1} or id=${nombre2}`; 
-                                    con.query(sql,(error, results, fields) => {
-                                        var string=JSON.stringify(results);
-                                        var json =  JSON.parse(string);
-                                        if (json.length == 1) {
-                                            nombre1 = json[0]['nombre'];
-                                            nombre2 = json[0]['nombre'];    
-                                        }else{
-                                            nombre1 = json[0]['nombre'];
-                                            nombre2 = json[1]['nombre'];
-                                        }                                        
-                                        logger.error(registrarlog('LOCAL',"Nombre 1 "+ataque1));
-                                        logger.error(registrarlog('LOCAL',"Nombre 2 "+ataque2));
-                                        console.log("Nombre 1 : "+nombre1);
-                                        console.log("Nombre 2: "+nombre2);
-                                        let termino = true;
-                                        let turno = 0;
-                                        //llamo a la recursividad
-                                        vidas = jugarRecursivo(termino,turno,vidas,ataques,idPartida);
-                                        
+            var options2 = {
+                url: urlUsarios+'/jugadores/'+id2,
+                method: 'GET',
+                headers:{
+                    "Authorization": "Bearer "+obtenerToken
+                }
+            }
+            request(options1, function(err, re, body){
+                // ERROR CON SERVICIO
+                if (err) {
+                    console.log('errpr cpm server 1');
+                    logger.error(registrarlog(options1['url'],"Error con servidor de usuarios 1"));
+                    res.status(406).send("Parámetros no válidos"); 
+                }
+                // ERROR NO EXISTE USUARIO
+                else if (re.statusCode == 404) {
+                    console.log('jugador 1 no encontardo ');
+                    logger.error(registrarlog(options1['url'],"Jugador 1 no encontrado"));
+                    res.status(404).send("Jugador no encontrado"); 
+                }
+                // TODO BIEN, RENDER INICIO
+                else if (re.statusCode == 200) {
+                    console.log('Jugador 1 Encontrado');
+                    logger.error(registrarlog(options1['url'],"Se encontro Jugador 1"));
+                    // PREGUNTO SI EXISTE EL USUARIO
+                    console.log('Busco a jugador 2');
+                    request(options2, function(e, r, b){        
+                        if (r.statusCode == 404) {
+                            console.log('Jugador No encontrado');
+                            logger.error(registrarlog(options2['url'],"Jugador 2 no encontrado"));
+                            res.status(404).send("Jugador no encontrado"); 
+                        }
+                        else if (r.statusCode == 200) {
+                            console.log('Jugador 2 OK');
+                            logger.error(registrarlog(options2['url'],"Se encontro Jugador 2"));
+                            let sql = `INSERT INTO partida(id,idJugador1,idJugador2)
+                            VALUES(\"${idPartida}\",${id1},${id2})`;
+                            con.query(sql,(error, results, fields) => {
+                                if (error) {
+                                    logger.error(registrarlog(options1['url'],error.message));
+                                    res.status(406).send("Parámetros no válidos"); 
+                                }else{
+                                    console.log('Inserto partida a BASE DE DATOS');
+                                    logger.error(registrarlog(options1['url'],"Se creo partida para jugador 1"));
+                                    logger.error(registrarlog(options2['url'],"Se creo partida para jugador 2"));
+                                    res.status(201).send("Partida simulada");
+                                    //comienza la simulacion
+                                    console.log("Comieza Simulacion");
+                                    //lanzo dados 4 veces
+                                    //2 para jugador 1
+                                    //2 para jugador 2
+                                    console.log('Solicito un Token');
+                                    console.log(peticion);
+                                    let obtenerToken = 'nada';
+                                    request(peticion, function(err, re, body){
+                                        if (err) {console.log(err.message);}
+                                        if (re.statusCode == 400) {console.log("Usuario o secret no válidos");}
+                                        if (re.statusCode == 201 || re.statusCode == 200) {
+                                            var r =  JSON.parse(body);
+                                            obtenerToken = r["jwt"];
+                                        }
+                                        dados.url = urlDados+ '/tirar/4';
+                                        dados.headers = {"Authorization": "Bearer "+obtenerToken};
+                                        request(dados, function(err, re, body){
+                                            var r =  JSON.parse(body);
+                                            let ataque1 = r["dados"][0];
+                                            let ataque2 = r["dados"][1];
+                                            let nombre1 = r["dados"][2];
+                                            let nombre2 = r["dados"][3];
+                                            let vidas = [100,100];
+                                            let ataques = [ataque1,ataque2];
+                                            console.log("Se lanzaron 4 dados");
+                                            console.log(r['dados']);
+                                            logger.error(registrarlog(dados['url'],"Se lanzo 4 veces el dado"));
+                                            logger.error(registrarlog(dados['url'],r['dados']));
+                                                
+                                            ataque1 = Math.floor(Math.random() * (10 - 1)) + 1;
+                                            ataque2 = Math.floor(Math.random() * (10 - 1)) + 1;
+                                            ataques = [ataque1,ataque2];
+                                            console.log("ataques: "+ataques);
+                                            logger.error(registrarlog('LOCAL',"Ataque 1 "+ataque1));
+                                            logger.error(registrarlog('LOCAL',"Ataque 2 "+ataque2));
+                                            console.log(`ID1: ${nombre1} ID2: ${nombre2}`)
+                                            let sql = `select nombre from pokemon 
+                                            where id=${nombre1} or id=${nombre2}`; 
+                                            con.query(sql,(error, results, fields) => {
+                                                var string=JSON.stringify(results);
+                                                var json =  JSON.parse(string);
+                                                if (json.length == 1) {
+                                                    nombre1 = json[0]['nombre'];
+                                                    nombre2 = json[0]['nombre'];    
+                                                }else{
+                                                    nombre1 = json[0]['nombre'];
+                                                    nombre2 = json[1]['nombre'];
+                                                }                                        
+                                                logger.error(registrarlog('LOCAL',"Nombre 1 "+ataque1));
+                                                logger.error(registrarlog('LOCAL',"Nombre 2 "+ataque2));
+                                                console.log("Nombre 1 : "+nombre1);
+                                                console.log("Nombre 2: "+nombre2);
+                                                let termino = true;
+                                                let turno = 0;
+                                                //llamo a la recursividad
+                                                vidas = jugarRecursivo(termino,turno,vidas,ataques,idPartida);
+                                                
+                                            });
+                                        });
                                     });
-
-                                });
-                            }
-                        });
-                    }
-                });
-            } 
+                                }
+                            });
+                        }
+                    });
+                } 
+            });
         });
     
     } catch (error) {
@@ -350,102 +395,126 @@ function jugarRecursivo(termino,turno,vidas,ataques,idPartida) {
         console.log("Se termino vidas: "+vidas);
         let consulta = ''
         //GANO 2
-        optionsTorneo.url = urlTorneo+'/partidas/'+ idPartida;
-        if (vidas[0]<=0) {
-            consulta = `UPDATE partida SET marcador=2, estado='terminada' WHERE id=\'${idPartida}\';`
-            optionsTorneo.json.marcador[0] = 0;
-            optionsTorneo.json.marcador[1] = vidas[1];
-            //ENVIO MARCADORES A TORNEO
-            request(optionsTorneo, function(err, re, body){
-                if (err) { 
-                    console.log(err);
-                }
-                if (re.statusCode == 404) {
-                    logger.error(registrarlog(optionsTorneo['url']),"404: Partida no encontrada");
-                    console.log('partida no encontrada');
-                }
-                if (re.statusCode == 406) {
-                    logger.error(registrarlog(optionsTorneo['url']),"406: Parametros no validos");
-                    console.log('Parametros no validos');
-                }
-                if (re.statusCode == 201) {
-                    logger.error(registrarlog(optionsTorneo['url']),"201 partida registrada");
-                    console.log('Partida registrada correctamente');
-                }
-            });
-            //UPDATE A MI BASE DE DATOS
-            con.query(consulta,(error, results, fields) => {
-                if (error) {
-                    console.log("ERROR en UPDATE");
-                }else{
-                    console.log("UPDATE 1 OK");
-                }
-            });
-        }else{
-        //GANO 1
-            consulta = `UPDATE partida SET marcador=1, estado='terminada' WHERE id=\'${idPartida}\';`
-            optionsTorneo.json.marcador[0] = vidas[0];
-            optionsTorneo.json.marcador[1] = 0;
-            //ENVIO MARCADORES A TORNEO
-            request(optionsTorneo, function(err, re, body){
-                if (err) { 
-                    console.log(err);
-                }
-                if (re.statusCode == 404) {
-                    logger.error(registrarlog(optionsTorneo['url']),"404: Partida no encontrada");
-                    console.log('partida no encontrada');
-                }
-                if (re.statusCode == 406) {
-                    logger.error(registrarlog(optionsTorneo['url']),"406: Parametros no validos");
-                    console.log('Parametros no validos');
-                }
-                if (re.statusCode == 201) {
-                    logger.error(registrarlog(optionsTorneo['url']),"201 partida registrada");
-                    console.log('Partida registrada correctamente');
-                }
-            });
-            //UPDATE A MI BASE DE DATOS
-            con.query(consulta,(error, results, fields) => {
-                if (error) {
-                    console.log("ERROR en UPDATE");
-                }else{
-                    console.log("UPDATE 2 OK");
-                }
-            });
-        }
+        console.log('Solicito un Token');
+        console.log(peticion);
+        let obtenerToken = 'nada';
+        request(peticion, function(err, re, body){
+            if (err) {console.log(err.message);}
+            if (re.statusCode == 400) {console.log("Usuario o secret no válidos");}
+            if (re.statusCode == 201 || re.statusCode == 200) {
+                var r =  JSON.parse(body);
+                obtenerToken = r["jwt"];
+            }
+            optionsTorneo.url = urlTorneo+'/partidas/'+ idPartida;
+            optionsTorneo.headers={"Authorization": "Bearer "+obtenerToken};
+            if (vidas[0]<=0) {
+                consulta = `UPDATE partida SET marcador=2, estado='terminada' WHERE id=\'${idPartida}\';`
+                optionsTorneo.json.marcador[0] = 0;
+                optionsTorneo.json.marcador[1] = vidas[1];
+                //ENVIO MARCADORES A TORNEO
+                request(optionsTorneo, function(err, re, body){
+                    if (err) { 
+                        console.log(err);
+                    }
+                    if (re.statusCode == 404) {
+                        logger.error(registrarlog(optionsTorneo['url']),"404: Partida no encontrada");
+                        console.log('partida no encontrada');
+                    }
+                    if (re.statusCode == 406) {
+                        logger.error(registrarlog(optionsTorneo['url']),"406: Parametros no validos");
+                        console.log('Parametros no validos');
+                    }
+                    if (re.statusCode == 201) {
+                        logger.error(registrarlog(optionsTorneo['url']),"201 partida registrada");
+                        console.log('Partida registrada correctamente');
+                    }
+                });
+                //UPDATE A MI BASE DE DATOS
+                con.query(consulta,(error, results, fields) => {
+                    if (error) {
+                        console.log("ERROR en UPDATE");
+                    }else{
+                        console.log("UPDATE 1 OK");
+                    }
+                });
+            }else{
+            //GANO 1
+                consulta = `UPDATE partida SET marcador=1, estado='terminada' WHERE id=\'${idPartida}\';`
+                optionsTorneo.json.marcador[0] = vidas[0];
+                optionsTorneo.json.marcador[1] = 0;
+                //ENVIO MARCADORES A TORNEO
+                request(optionsTorneo, function(err, re, body){
+                    if (err) { 
+                        console.log(err);
+                    }
+                    if (re.statusCode == 404) {
+                        logger.error(registrarlog(optionsTorneo['url']),"404: Partida no encontrada");
+                        console.log('partida no encontrada');
+                    }
+                    if (re.statusCode == 406) {
+                        logger.error(registrarlog(optionsTorneo['url']),"406: Parametros no validos");
+                        console.log('Parametros no validos');
+                    }
+                    if (re.statusCode == 201) {
+                        logger.error(registrarlog(optionsTorneo['url']),"201 partida registrada");
+                        console.log('Partida registrada correctamente');
+                    }
+                });
+                //UPDATE A MI BASE DE DATOS
+                con.query(consulta,(error, results, fields) => {
+                    if (error) {
+                        console.log("ERROR en UPDATE");
+                    }else{
+                        console.log("UPDATE 2 OK");
+                    }
+                });
+            }
         return vidas;
+        });
     }else{
-        console.log("*** DATOS DE JUEGO ***");
-        console.log("--- Turno: "+turno);
-        console.log("--- Vidas: "+vidas);
-        dados.url = urlDados+ '/tirar/1';
-        //lanzo una vez el dado
-        request(dados, function(err2, re2, body2){
-            if (err2) {
-                console.log(err2);
+        console.log('Solicito un Token');
+        console.log(peticion);
+        let obtenerToken = 'nada';
+        request(peticion, function(err, re, body){
+            if (err) {console.log(err.message);}
+            if (re.statusCode == 400) {console.log("Usuario o secret no válidos");}
+            if (re.statusCode == 201 || re.statusCode == 200) {
+                var r =  JSON.parse(body);
+                obtenerToken = r["jwt"];
             }
-            logger.error(registrarlog("LOCAL"),"Comieza Simulacion");
-            var rr =  JSON.parse(body2);
-            let numero = rr["dados"][0];
-            console.log("--- Lanzo jugador: "+turno+" el dado: "+numero);
-            logger.error(registrarlog(dados['url'],"Lanzo jugador: "+turno+" el dado: "+numero));
-            logger.error(registrarlog('LOCAL',"Es Turno de "+turno));
-            //le bajo la vida
-            ataqueTurno = (numero * ataques[turno]);
-            console.log('--- Ataco con: '+ataqueTurno)
-            //hago cmabio de turno
-            turno = (turno == 0) ? 1 : 0;
-            vidas[turno] = vidas[turno] - ataqueTurno;
-            logger.error(registrarlog('LOCAL',"Vidas Actuales"+vidas));
-            //alguien perdio
-            if (vidas[0] <=0 || vidas[1] <=0) {
-                termino = false;
-                console.log("Alguien perdio, vidas: "+vidas);
-                logger.error(registrarlog('LOCAL',"Alguien perdio Vidas: "+vidas));
-            }
-            logger.error(registrarlog('LOCAL',"Cambio de Turno a "+turno));
-            console.log("--- Cambio turno le toca: "+turno);
-            return jugarRecursivo(termino,turno,vidas,ataques,idPartida);
+            console.log("*** DATOS DE JUEGO ***");
+            console.log("--- Turno: "+turno);
+            console.log("--- Vidas: "+vidas);
+            dados.url = urlDados+ '/tirar/1';
+            dados.headers = { "Authorization": "Bearer "+obtenerToken}
+            //lanzo una vez el dado
+            request(dados, function(err2, re2, body2){
+                if (err2) {
+                    console.log(err2);
+                }
+                logger.error(registrarlog("LOCAL"),"Comieza Simulacion");
+                var rr =  JSON.parse(body2);
+                let numero = rr["dados"][0];
+                console.log("--- Lanzo jugador: "+turno+" el dado: "+numero);
+                logger.error(registrarlog(dados['url'],"Lanzo jugador: "+turno+" el dado: "+numero));
+                logger.error(registrarlog('LOCAL',"Es Turno de "+turno));
+                //le bajo la vida
+                ataqueTurno = (numero * ataques[turno]);
+                console.log('--- Ataco con: '+ataqueTurno)
+                //hago cmabio de turno
+                turno = (turno == 0) ? 1 : 0;
+                vidas[turno] = vidas[turno] - ataqueTurno;
+                logger.error(registrarlog('LOCAL',"Vidas Actuales"+vidas));
+                //alguien perdio
+                if (vidas[0] <=0 || vidas[1] <=0) {
+                    termino = false;
+                    console.log("Alguien perdio, vidas: "+vidas);
+                    logger.error(registrarlog('LOCAL',"Alguien perdio Vidas: "+vidas));
+                }
+                logger.error(registrarlog('LOCAL',"Cambio de Turno a "+turno));
+                console.log("--- Cambio turno le toca: "+turno);
+                return jugarRecursivo(termino,turno,vidas,ataques,idPartida);
+            });
         });
     }
     
