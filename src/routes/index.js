@@ -60,40 +60,48 @@ router.post('/generar', function(req, res, next) {
     let valido = false;
     //vamos a verificar clave
     if (process.env.VERIFICAR_JWT == 'true') {
-        // Traigo los headers
-        let authHeader = req.headers.authorization;
-        let token = authHeader.split(" ");
-        token = token[1]
-        
-        //Traigo la llave publica
-        let archivo = process.env.PUBLIC_JWT;
-        var cert = fs.readFileSync('/src/' +archivo);        
-        console.log("Token HEADER: "+token);
-        console.log("PUBLIC_JWT: "+cert);
-        //COMPRUEBO EL JWT CON RS256
-        jwt.verify(token, cert, { algorithms: ['RS256'] }, function (err, payload) {
-            // if token alg != RS256,  err == invalid signature
-            if (err) {
-                console.log(err.message);
-                valido = false;
-            }else{
-                for (let index = 0; index < payload['scopes'].length; index++) {
-                    const element = payload['scopes'][index];
-                    console.log("Se buscar: juegos.generar y encontro: "+element);
-                    if (element == 'juegos.generar') {
-                        valido = true;
-                        break;
+        if (req.headers.authorization != undefined) 
+        {
+            // Traigo los headers
+            let authHeader = req.headers.authorization;
+            let token = authHeader.split(" ");
+            token = token[1]
+            
+            //Traigo la llave publica
+            let archivo = process.env.PUBLIC_JWT;
+            var cert = fs.readFileSync('/src/' +archivo);        
+            console.log("Token HEADER: "+token);
+            console.log("PUBLIC_JWT: "+cert);
+            //COMPRUEBO EL JWT CON RS256
+            jwt.verify(token, cert, { algorithms: ['RS256'] }, function (err, payload) {
+                // if token alg != RS256,  err == invalid signature
+                if (err) {
+                    console.log(err.message);
+                    valido = false;
+                }else{
+                    for (let index = 0; index < payload['scopes'].length; index++) {
+                        const element = payload['scopes'][index];
+                        console.log("Se buscar: juegos.generar y encontro: "+element);
+                        if (element == 'juegos.generar') {
+                            valido = true;
+                            break;
+                        }
                     }
                 }
+            });
+            //si no es valido lo saco
+            if(valido == false){
+                console.log("NOT autolizado");
+                res.status(401).send("NOT_AUTHORIZED"); 
+                return 0;
             }
-        });
-        //si no es valido lo saco
-        if(valido == false){
+            console.log("Si fue autorizado");
+        }
+        else{
             console.log("NOT autolizado");
             res.status(401).send("NOT_AUTHORIZED"); 
             return 0;
         }
-        console.log("Si fue autorizado");
     }
     // CAPTURO DATOS
     try {
@@ -172,39 +180,46 @@ router.post('/simular', function(req, res, next) {
     //vamos a verificar clave
     if (process.env.VERIFICAR_JWT == 'true') {
         // Traigo los headers
-        let authHeader = req.headers.authorization;
-        let token = authHeader.split(" ");
-        token = token[1]
-        
-        //Traigo la llave publica
-        let archivo = process.env.PUBLIC_JWT;
-        var cert = fs.readFileSync('/src/' +archivo);        
-        console.log("Token HEADER: "+token);
-        console.log("PUBLIC_JWT: "+cert);
-        //COMPRUEBO EL JWT CON RS256
-        jwt.verify(token, cert, { algorithms: ['RS256'] }, function (err, payload) {
-            // if token alg != RS256,  err == invalid signature
-            if (err) {
-                console.log(err.message);
-                valido = false;
-            }else{
-                for (let index = 0; index < payload['scopes'].length; index++) {
-                    const element = payload['scopes'][index];
-                    console.log("Se buscar: juegos.generar y encontro: "+element);
-                    if (element == 'juegos.simular') {
-                        valido = true;
-                        break;
+        if (req.headers.authorization != undefined) {
+            let authHeader = req.headers.authorization;
+            let token = authHeader.split(" ");
+            token = token[1]
+            
+            //Traigo la llave publica
+            let archivo = process.env.PUBLIC_JWT;
+            var cert = fs.readFileSync('/src/' +archivo);        
+            console.log("Token HEADER: "+token);
+            console.log("PUBLIC_JWT: "+cert);
+            //COMPRUEBO EL JWT CON RS256
+            jwt.verify(token, cert, { algorithms: ['RS256'] }, function (err, payload) {
+                // if token alg != RS256,  err == invalid signature
+                if (err) {
+                    console.log(err.message);
+                    valido = false;
+                }else{
+                    for (let index = 0; index < payload['scopes'].length; index++) {
+                        const element = payload['scopes'][index];
+                        console.log("Se buscar: juegos.generar y encontro: "+element);
+                        if (element == 'juegos.simular') {
+                            valido = true;
+                            break;
+                        }
                     }
                 }
+            });
+            //si no es valido lo saco
+            if(valido == false){
+                console.log("NOT autolizado");
+                res.status(401).send("NOT_AUTHORIZED"); 
+                return 0;
             }
-        });
-        //si no es valido lo saco
-        if(valido == false){
+            console.log("Si fue autorizado");
+        }else{
             console.log("NOT autolizado");
             res.status(401).send("NOT_AUTHORIZED"); 
             return 0;
         }
-        console.log("Si fue autorizado");
+        
     }
     try {
         var idPartida = req.body['id'];
