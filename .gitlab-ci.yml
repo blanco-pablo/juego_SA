@@ -27,11 +27,11 @@ step-uat:
     - uat
   script:
     - echo setting up env $DYNAMIC_ENV_VAR
-    - sudo apt-get install -y python-pip
-    - sudo pip install docker-compose
-    - sudo docker images prune -f
+    - sudo apt-get install -y python3-pip
+    - sudo pip3 install docker-compose
+    - sudo docker image prune -f
     - sudo docker-compose -f docker-compose.yml build --no-cache
-    - sudo docker-compose -f docker-compose.yml up
+    - sudo docker-compose -f docker-compose.yml up -d
   
 step-deploy-staging:
   stage: deploy
@@ -43,11 +43,11 @@ step-deploy-staging:
     - staging
   script:
     - echo setting up env $DYNAMIC_ENV_VAR
-    - sudo apt-get install -y python-pip
-    - sudo pip install docker-compose
-    - sudo docker images prune -f
+    - sudo apt-get install -y python3-pip
+    - sudo pip3 install docker-compose
+    - sudo docker image prune -f
     - sudo docker-compose -f docker-compose.yml build --no-cache
-    - sudo docker-compose -f docker-compose.yml up
+    - sudo docker-compose -f docker-compose.yml up -d 
 
 step-deploy-production:
   stage: deploy
@@ -59,9 +59,9 @@ step-deploy-production:
     - production
   script:
     - echo setting up env $DYNAMIC_ENV_VAR
-    - sudo apt-get install -y python-pip
-    - sudo pip install docker-compose
-    - sudo docker images prune -f
+    - sudo apt-get install -y python3-pip
+    - sudo pip3 install docker-compose
+    - sudo docker image prune -f
     - sudo docker-compose -f docker-compose.yml build --no-cache
-    - sudo docker-compose -f docker-compose.yml up
+    - sudo docker-compose -f docker-compose.yml up -d
   when: manual

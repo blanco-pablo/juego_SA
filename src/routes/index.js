@@ -5,9 +5,12 @@ const con       = require('../database');
 const moment    = require('moment');
 const fs        = require('fs');
 const { createLogger, transports ,format} = require('winston');
-const urlUsarios = 'http://104.155.167.93:8000';
-const urlDados = 'http://104.155.167.93:8001';
-const urlTorneo = 'http://104.155.167.93:8002';
+var jwt = require('jsonwebtoken');
+
+const urlUsarios = process.env.urlUsarios || 'http://104.155.167.93:8000';
+const urlDados = process.env.urlDados ||'http://104.155.167.93:8001';
+const urlTorneo = process.env.urlTorneo ||'http://104.155.167.93:8002';
+const urlToken = process.env.urlToken ||'http://35.202.77.9/api/token';
 
 var auth = function(req, res, next) {
   if (req.session.user != undefined && req.session != undefined && req.session.admin != false){
@@ -39,10 +42,67 @@ var optionsTorneo = {
         "marcador":[]
     }
 }
+
+var peticion = {
+    url: urlToken,
+    method: 'GET',
+    qs: {
+        "id":process.env.TOKEN_ID, 
+        "secret":process.env.TOKEN_SECRET
+    }
+}
 const jsonLog = {URL: "",action: "",dia:"",hora:""};
 
 // ---------------------------- INICIO API PUBLICA
 router.post('/generar', function(req, res, next) {    
+    //variable para dejar pasar 
+    console.log('Entro a generar partida');
+    let valido = false;
+    //vamos a verificar clave
+    if (process.env.VERIFICAR_JWT == 'true') {
+        if (req.headers.authorization != undefined) 
+        {
+            // Traigo los headers
+            let authHeader = req.headers.authorization;
+            let token = authHeader.split(" ");
+            token = token[1]
+            
+            //Traigo la llave publica
+            let archivo = process.env.PUBLIC_JWT;
+            var cert = fs.readFileSync('/src/' +archivo);        
+            console.log("Token HEADER: "+token);
+            console.log("PUBLIC_JWT: "+cert);
+            //COMPRUEBO EL JWT CON RS256
+            jwt.verify(token, cert, { algorithms: ['RS256'] }, function (err, payload) {
+                // if token alg != RS256,  err == invalid signature
+                if (err) {
+                    console.log(err.message);
+                    valido = false;
+                }else{
+                    for (let index = 0; index < payload['scopes'].length; index++) {
+                        const element = payload['scopes'][index];
+                        console.log("Se buscar: juegos.generar y encontro: "+element);
+                        if (element == 'juegos.generar') {
+                            valido = true;
+                            break;
+                        }
+                    }
+                }
+            });
+            //si no es valido lo saco
+            if(valido == false){
+                console.log("NOT autolizado");
+                res.status(401).send("NOT_AUTHORIZED"); 
+                return 0;
+            }
+            console.log("Si fue autorizado");
+        }
+        else{
+            console.log("NOT autolizado");
+            res.status(401).send("NOT_AUTHORIZED"); 
+            return 0;
+        }
+    }
     // CAPTURO DATOS
     try {
         var idPartida = req.body['id'];
@@ -114,6 +174,53 @@ function registrarlog(url,action) {
 }
 
 router.post('/simular', function(req, res, next) {
+    //variable para dejar pasar 
+    console.log('Entro a simular partida');
+    let valido = false;
+    //vamos a verificar clave
+    if (process.env.VERIFICAR_JWT == 'true') {
+        // Traigo los headers
+        if (req.headers.authorization != undefined) {
+            let authHeader = req.headers.authorization;
+            let token = authHeader.split(" ");
+            token = token[1]
+            
+            //Traigo la llave publica
+            let archivo = process.env.PUBLIC_JWT;
+            var cert = fs.readFileSync('/src/' +archivo);        
+            console.log("Token HEADER: "+token);
+            console.log("PUBLIC_JWT: "+cert);
+            //COMPRUEBO EL JWT CON RS256
+            jwt.verify(token, cert, { algorithms: ['RS256'] }, function (err, payload) {
+                // if token alg != RS256,  err == invalid signature
+                if (err) {
+                    console.log(err.message);
+                    valido = false;
+                }else{
+                    for (let index = 0; index < payload['scopes'].length; index++) {
+                        const element = payload['scopes'][index];
+                        console.log("Se buscar: juegos.generar y encontro: "+element);
+                        if (element == 'juegos.simular') {
+                            valido = true;
+                            break;
+                        }
+                    }
+                }
+            });
+            //si no es valido lo saco
+            if(valido == false){
+                console.log("NOT autolizado");
+                res.status(401).send("NOT_AUTHORIZED"); 
+                return 0;
+            }
+            console.log("Si fue autorizado");
+        }else{
+            console.log("NOT autolizado");
+            res.status(401).send("NOT_AUTHORIZED"); 
+            return 0;
+        }
+        
+    }
     try {
         var idPartida = req.body['id'];
         var id1 = req.body['jugadores'][0];
@@ -126,29 +233,35 @@ router.post('/simular', function(req, res, next) {
             url: urlUsarios+'/jugadores/'+id2,
             method: 'GET'
         }
-        
+        console.log('Entro a simular partida');
         // PREGUNTO SI EXISTE EL USUARIO 1
         request(options1, function(err, re, body){
             // ERROR CON SERVICIO
             if (err) {
+                console.log('errpr cpm server 1');
                 logger.error(registrarlog(options1['url'],"Error con servidor de usuarios 1"));
                 res.status(406).send("Parámetros no válidos"); 
             }
             // ERROR NO EXISTE USUARIO
             else if (re.statusCode == 404) {
+                console.log('jugador 1 no encontardo ');
                 logger.error(registrarlog(options1['url'],"Jugador 1 no encontrado"));
                 res.status(404).send("Jugador no encontrado"); 
             }
             // TODO BIEN, RENDER INICIO
             else if (re.statusCode == 200) {
+                console.log('Jugador 1 Encontrado');
                 logger.error(registrarlog(options1['url'],"Se encontro Jugador 1"));
                 // PREGUNTO SI EXISTE EL USUARIO
+                console.log('Busco a jugador 2');
                 request(options2, function(e, r, b){        
                     if (r.statusCode == 404) {
+                        console.log('Jugador No encontrado');
                         logger.error(registrarlog(options2['url'],"Jugador 2 no encontrado"));
                         res.status(404).send("Jugador no encontrado"); 
                     }
                     else if (r.statusCode == 200) {
+                        console.log('Jugador 2 OK');
                         logger.error(registrarlog(options2['url'],"Se encontro Jugador 2"));
                         let sql = `INSERT INTO partida(id,idJugador1,idJugador2)
                         VALUES(\"${idPartida}\",${id1},${id2})`;
@@ -157,6 +270,7 @@ router.post('/simular', function(req, res, next) {
                                 logger.error(registrarlog(options1['url'],error.message));
                                 res.status(406).send("Parámetros no válidos"); 
                             }else{
+                                console.log('Inserto partida a BASE DE DATOS');
                                 logger.error(registrarlog(options1['url'],"Se creo partida para jugador 1"));
                                 logger.error(registrarlog(options2['url'],"Se creo partida para jugador 2"));
                                 res.status(201).send("Partida simulada");
@@ -200,8 +314,8 @@ router.post('/simular', function(req, res, next) {
                                         }                                        
                                         logger.error(registrarlog('LOCAL',"Nombre 1 "+ataque1));
                                         logger.error(registrarlog('LOCAL',"Nombre 2 "+ataque2));
-                                        console.log("N1: "+nombre1);
-                                        console.log("N2: "+nombre2);
+                                        console.log("Nombre 1 : "+nombre1);
+                                        console.log("Nombre 2: "+nombre2);
                                         let termino = true;
                                         let turno = 0;
                                         //llamo a la recursividad
@@ -369,66 +483,91 @@ router.get('/', auth,function(req, res, next) {
 // LOGICA DEL LOGIN
 router.post('/', function (req, res, next) {
     // CONFIGURACION DE DATOS
-    var options = {
-        url: urlUsarios+'/login',
-        method: 'GET',
-        qs: {
-            "email":req.body.username, 
-            "password":req.body.password
+    console.log('Solicito un Token');
+    console.log(peticion);
+    let obtenerToken = 'nada';
+    request(peticion, function(err, re, body){
+        if (err) {console.log(err.message);}
+        if (re.statusCode == 400) {console.log("Usuario o secret no válidos");}
+        if (re.statusCode == 201) {
+            var r =  JSON.parse(body);
+            obtenerToken = r["jwt"];
         }
-    }
-    // PREGUNTO SI EXISTE EL USUARIO
-    request(options, function(err, re, body){
-        req.session.admin  = false;
-        req.session.user = undefined;
-        // ERROR CON SERVICIO
-        if (err) { 
-            console.log(err);
-            logger.error(registrarlog(options['url'],"ERROR con servidor"));
-            res.render('login', { error: true, msm:"ERROR con servidor"});
-        }
-        // ERROR NO EXISTE USUARIO
-        if (re.statusCode == 400) {
-            logger.error(registrarlog(options['url'],"Usuario o contra no coinciden"));
-            res.render('login', { error: true, msm:"Usuario o contra no coinciden"});
-        }
-        // TODO BIEN, RENDER INICIO
-        if (re.statusCode == 200) {
-            logger.error(registrarlog(options['url'],"Login Usuario OK"));
-            //res.render('index', { error: false, msm:"Todo bien",usuario:body});
-            usuario = JSON.parse(body);
-            //CONSULTAMOS TODOS LOS USUARIOS
-            if (usuario != undefined) {
-                req.session.user = usuario;
-                req.session.admin = true;
-                if (req.session.user['administrador'] == true) {
-                    // CONFIGURACION DE DATOS
-                    options3 = {
-                        url: urlUsarios+'/jugadores',
-                        method: 'GET'
-                    }
-                    // TRAIGO LISTADO DE JUGADORES SI ES ADMIN
-                    request(options3, function(err2, re2, body2){
-                        // ERROR CON SERVICIO
-                        if (err2) { 
-                            console.log(err2);
-                            logger.error(registrarlog(options3['url'],"ERROR con servidor"));
-                        }
-                        // TODO BIEN, RENDER INICIO
-                        if (re2.statusCode == 200) {                            
-                            logger.error(registrarlog(options3['url'],"Consigue el listado de todos los jugadores"));
-                            usuarios = JSON.parse(body2);
-                            req.session.usuarios = usuarios;
-                            //console.log(usuarios);
-                            res.redirect("/index");
-                        }      
-                    });
-                }else{
-                    res.redirect("/index");
-                }
-                
+
+        var options = {
+            url: urlUsarios+'/login',
+            method: 'GET',
+            qs: {
+                "email":req.body.username, 
+                "password":req.body.password
+            },
+            headers:{
+                "Authorization": "Bearer "+obtenerToken
             }
-        } 
+        }
+        console.log('Voy a hacer peticion ');
+        console.log(options);
+        // PREGUNTO SI EXISTE EL USUARIO
+        request(options, function(err, re, body){
+            req.session.admin  = false;
+            req.session.user = undefined;
+            // ERROR CON SERVICIO
+            if (err) { 
+                console.log(err);
+                logger.error(registrarlog(options['url'],"ERROR con servidor"));
+                res.render('login', { error: true, msm:"ERROR con servidor"});
+            }
+            // ERROR NO EXISTE USUARIO
+            if (re.statusCode == 400) {
+                console.log("Usuario o contra no coinciden");
+                logger.error(registrarlog(options['url'],"Usuario o contra no coinciden"));
+                res.render('login', { error: true, msm:"Usuario o contra no coinciden"});
+            }
+            // TODO BIEN, RENDER INICIO
+            if (re.statusCode == 200) {
+                console.log("Login OK");
+                logger.error(registrarlog(options['url'],"Login Usuario OK"));
+                //res.render('index', { error: false, msm:"Todo bien",usuario:body});
+                usuario = JSON.parse(body);
+                //CONSULTAMOS TODOS LOS USUARIOS
+                if (usuario != undefined) {
+                    req.session.user = usuario;
+                    req.session.admin = true;
+                    if (req.session.user['administrador'] == true) {
+                        // CONFIGURACION DE DATOS
+                        options3 = {
+                            url: urlUsarios+'/jugadores',
+                            method: 'GET',
+                            headers:{
+                                "Authorization": "Bearer "+obtenerToken
+                            }
+                        }
+                        console.log("Traigo todos los usuarios si es admin");
+                        console.log(options3);
+                        // TRAIGO LISTADO DE JUGADORES SI ES ADMIN
+                        request(options3, function(err2, re2, body2){
+                            // ERROR CON SERVICIO
+                            if (err2) { 
+                                console.log(err2);
+                                logger.error(registrarlog(options3['url'],"ERROR con servidor"));
+                            }
+                            // TODO BIEN, RENDER INICIO
+                            if (re2.statusCode == 200) {      
+                                console.log('Consigue el listado de todos los jugadores');                      
+                                logger.error(registrarlog(options3['url'],"Consigue el listado de todos los jugadores"));
+                                usuarios = JSON.parse(body2);
+                                req.session.usuarios = usuarios;
+                                //console.log(usuarios);
+                                res.redirect("/index");
+                            }      
+                        });
+                    }else{
+                        res.redirect("/index");
+                    }
+                    
+                }
+            } 
+        });
     });
 });
 
@@ -440,129 +579,173 @@ router.get('/index',auth, function (req, res, next) {
 
 // LOGICA DE CREAR USUARIO
 router.post('/crear', function (req, res, next) {
-    // CAPTURO DATOS
-    var options = {
-       url: urlUsarios+'/jugadores',
-       method: 'POST',
-       json: {
-           "id":parseInt(req.body.idC),
-           "email":req.body.email, 
-           "nombres":req.body.nombres, 
-           "apellidos":req.body.apellidos,
-           "password":req.body.password, 
-           "administrador":(req.body.administrador =='true')
-       }
-   }
-   // CREO EL USUARIO
-   request(options, function(err, re, body){
-       // ERROR CON SERVICIO
-       if (err) { 
-           console.log(err);
-           logger.error(registrarlog(options['url'],"ERROR con POST de usuarios"));
-           res.render('index', { error: true, msm:"No se creo ningun usuario",usuario:req.session.user,usuarios:req.session.usuarios,si:"si"});
-       }
-       // ERROR Datos inválidos
-       if (re.statusCode == 406) {
-           logger.error(registrarlog(options['url'],"Datos inválidos en POST de usarios"));
-           res.render('index', { error: true, msm:"Datos inválidos en POST",usuario:req.session.user,usuarios:req.session.usuarios,si:"si"});
-       }
-       // TODO BIEN, RENDER INICIO
-       if (re.statusCode == 201) {
-            logger.error(registrarlog(options['url'],"Usuario creado"));
-            // CONFIGURACION DE DATOS
-            options3 = {
-                url: urlUsarios+'/jugadores',
-                method: 'GET'
+    console.log('Solicito un Token');
+    console.log(peticion);
+    let obtenerToken = 'nada';    
+    request(peticion, function(err, re, body){
+        if (err) {console.log(err.message);}
+        if (re.statusCode == 400) {console.log("Usuario o secret no válidos");}
+        if (re.statusCode == 201) {
+            var r =  JSON.parse(body);
+            obtenerToken = r["jwt"];
+        }
+        console.log('Entro a crear usuario');
+        // CAPTURO DATOS
+        var options = {
+        url: urlUsarios+'/jugadores',
+        method: 'POST',
+        json: {
+            "id":parseInt(req.body.idC),
+            "email":req.body.email, 
+            "nombres":req.body.nombres, 
+            "apellidos":req.body.apellidos,
+            "password":req.body.password, 
+            "administrador":(req.body.administrador =='true')
+            },
+        headers:{
+            "Authorization": "Bearer "+obtenerToken
+        }
+
+        }
+        console.log(options);
+        // CREO EL USUARIO
+        request(options, function(err, re, body){
+            // ERROR CON SERVICIO
+            if (err) { 
+                console.log(err);
+                logger.error(registrarlog(options['url'],"ERROR con POST de usuarios"));
+                res.render('index', { error: true, msm:"No se creo ningun usuario",usuario:req.session.user,usuarios:req.session.usuarios,si:"si"});
             }
-            // TRAIGO LISTADO DE JUGADORES SI ES ADMIN
-            request(options3, function(err2, re2, body2){
-                // ERROR CON SERVICIO
-                if (err2) { 
-                    console.log(err2);
-                    logger.error(registrarlog(options3['url'],"ERROR con servidor"));
+            // ERROR Datos inválidos
+            if (re.statusCode == 406) {
+                console.log("Datos inválidos en POST de usarios");
+                logger.error(registrarlog(options['url'],"Datos inválidos en POST de usarios"));
+                res.render('index', { error: true, msm:"Datos inválidos en POST",usuario:req.session.user,usuarios:req.session.usuarios,si:"si"});
+            }
+            // TODO BIEN, RENDER INICIO
+            if (re.statusCode == 201) {
+                console.log("Usuario creado");
+                logger.error(registrarlog(options['url'],"Usuario creado"));
+                // CONFIGURACION DE DATOS
+                options3 = {
+                    url: urlUsarios+'/jugadores',
+                    method: 'GET',
+                    headers:{
+                        "Authorization": "Bearer "+obtenerToken
+                    }
                 }
-                // TODO BIEN, RENDER INICIO
-                if (re2.statusCode == 200) {                            
-                    logger.error(registrarlog(options3['url'],"Consigue el listado de todos los jugadores"));
-                    req.session.user = JSON.parse(body2);
-                    //console.log(usuarios);
-                    res.redirect("/index");
-                }      
-            });           
-       }      
-   });
+                console.log("Get todos los jugadores");
+                // TRAIGO LISTADO DE JUGADORES SI ES ADMIN
+                request(options3, function(err2, re2, body2){
+                    // ERROR CON SERVICIO
+                    if (err2) { 
+                        console.log(err2);
+                        logger.error(registrarlog(options3['url'],"ERROR con servidor"));
+                    }
+                    // TODO BIEN, RENDER INICIO
+                    if (re2.statusCode == 200) {    
+                        console.log("Consigue el listado de todos los jugadores");                        
+                        logger.error(registrarlog(options3['url'],"Consigue el listado de todos los jugadores"));
+                        req.session.user = JSON.parse(body2);
+                        //console.log(usuarios);
+                        res.redirect("/index");
+                    }      
+                });           
+            }      
+        });
+    });
 });
 
 // LOGICA DE CAMBIO DE DATOS
 router.post('/cambio', function (req, res, next) {
-     // CAPTURO DATOS
-     var options = {
-        url: urlUsarios+'/jugadores/'+req.session.user['id'],
-        method: 'PUT',
-        json: {
-            "id":req.session.user['id'],
-            "nombres":req.body.nombres, 
-            "apellidos":req.body.apellidos,
-            "password":req.body.password, 
-            "administrador":req.session.user['administrador']
-        }
-    }
-    // PREGUNTO SI EXISTE EL USUARIO
-    request(options, function(err, re, body){
-        // ERROR CON SERVICIO
-        if (err) { 
-            console.log(err);
-            logger.error(registrarlog(options['url'],"ERROR con PUT de usuarios"));
-            res.render('index', { error: true, msm:"PUT Usuarios no funciono",usuario:req.session.user,usuarios:req.session.usuarios,si:"si"});
-        }
-        // ERROR NO EXISTE USUARIO
-        if (re.statusCode == 404) {
-            logger.error(registrarlog(options['url'],"Usuario no encontrado en PUT de usarios"));
-            res.render('index', { error: true, msm:"Usuario no encontrado en PUT",usuario:req.session.user,usuarios:req.session.usuarios,si:"si"});
-        }
-        // ERROR Datos inválidos
-        if (re.statusCode == 406) {
-            logger.error(registrarlog(options['url'],"Datos inválidos en PUT de usarios"));
-            res.render('index', { error: true, msm:"Datos inválidos en PUT",usuario:req.session.user,usuarios:req.session.usuarios,si:"si"});
-        }
-        // TODO BIEN, RENDER INICIO
+    console.log('Solicito un Token');
+    console.log(peticion);
+    let obtenerToken = 'nada';    
+    request(peticion, function(err, re, body){
+        if (err) {console.log(err.message);}
+        if (re.statusCode == 400) {console.log("Usuario o secret no válidos");}
         if (re.statusCode == 201) {
-            logger.error(registrarlog(options['url'],"Jugador actualizado"));
-            req.session.user = body;
-            // CONFIGURACION DE DATOS
-            options3 = {
-                url: urlUsarios+'/jugadores',
-                method: 'GET'
-            }
-            // TRAIGO LISTADO DE JUGADORES SI ES ADMIN
-            request(options3, function(err2, re2, body2){
-                // ERROR CON SERVICIO
-                if (err2) { 
-                    console.log(err2);
-                    logger.error(registrarlog(options3['url'],"ERROR con servidor"));
-                }
-                // TODO BIEN, RENDER INICIO
-                if (re2.statusCode == 200) {                            
-                    logger.error(registrarlog(options3['url'],"Consigue el listado de todos los jugadores"));
-                    req.session.usuarios = JSON.parse(body2);
-                    //console.log(usuarios);
-                    res.redirect("/index");
-                    //res.render('index', { error: true, msm:"Jugador Actualizado",usuario:usuario,usuarios:usuarios,si:"si"});
-                }      
-            });
-            
-        }      
-    });
+            var r =  JSON.parse(body);
+            obtenerToken = r["jwt"];
+        }
 
+        console.log('Entro a cambiar datos');
+        // CAPTURO DATOS
+        var options = {
+            url: urlUsarios+'/jugadores/'+req.session.user['id'],
+            method: 'PUT',
+            json: {
+                "id":req.session.user['id'],
+                "nombres":req.body.nombres, 
+                "apellidos":req.body.apellidos,
+                "password":req.body.password, 
+                "administrador":req.session.user['administrador']
+            },
+            headers:{
+                "Authorization": "Bearer "+obtenerToken
+            }
+        }
+        // PREGUNTO SI EXISTE EL USUARIO
+        request(options, function(err, re, body){
+            // ERROR CON SERVICIO
+            if (err) { 
+                console.log(err);
+                logger.error(registrarlog(options['url'],"ERROR con PUT de usuarios"));
+                res.render('index', { error: true, msm:"PUT Usuarios no funciono",usuario:req.session.user,usuarios:req.session.usuarios,si:"si"});
+            }
+            // ERROR NO EXISTE USUARIO
+            if (re.statusCode == 404) {
+                logger.error(registrarlog(options['url'],"Usuario no encontrado en PUT de usarios"));
+                res.render('index', { error: true, msm:"Usuario no encontrado en PUT",usuario:req.session.user,usuarios:req.session.usuarios,si:"si"});
+            }
+            // ERROR Datos inválidos
+            if (re.statusCode == 406) {
+                logger.error(registrarlog(options['url'],"Datos inválidos en PUT de usarios"));
+                res.render('index', { error: true, msm:"Datos inválidos en PUT",usuario:req.session.user,usuarios:req.session.usuarios,si:"si"});
+            }
+            // TODO BIEN, RENDER INICIO
+            if (re.statusCode == 201) {
+                logger.error(registrarlog(options['url'],"Jugador actualizado"));
+                req.session.user = body;
+                // CONFIGURACION DE DATOS
+                options3 = {
+                    url: urlUsarios+'/jugadores',
+                    method: 'GET',
+                    headers:{
+                        "Authorization": "Bearer "+obtenerToken
+                    }
+                }
+                // TRAIGO LISTADO DE JUGADORES SI ES ADMIN
+                request(options3, function(err2, re2, body2){
+                    // ERROR CON SERVICIO
+                    if (err2) { 
+                        console.log(err2);
+                        logger.error(registrarlog(options3['url'],"ERROR con servidor"));
+                    }
+                    // TODO BIEN, RENDER INICIO
+                    if (re2.statusCode == 200) {                            
+                        logger.error(registrarlog(options3['url'],"Consigue el listado de todos los jugadores"));
+                        req.session.usuarios = JSON.parse(body2);
+                        //console.log(usuarios);
+                        res.redirect("/index");
+                        //res.render('index', { error: true, msm:"Jugador Actualizado",usuario:usuario,usuarios:usuarios,si:"si"});
+                    }      
+                });
+                
+            }      
+        });
+    });
 });
 
 // Logout endpoint
 router.get('/logout', function (req, res) {
+    console.log('LOGOUT');
     req.session.user = undefined;
     req.session.admin = false;
     req.session.usuarios = null;
     req.session.destroy();
     res.redirect("/");
   });
+
 
 module.exports = router;
